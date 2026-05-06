@@ -26,6 +26,13 @@
 
             <!-- Give the backgroun a color. -->
             <a-sky color="#444444"></a-sky>
+
+            <!-- Add a box that I can grab for testing. -->
+            <a-box position="0 1.5 -0.5" color="#4488FF" scale="0.2 0.2 0.2" grabbable></a-box>
+
+            <!-- Add hands to the scene. -->
+            <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+            <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
     </a-scene>
 
 </body>
