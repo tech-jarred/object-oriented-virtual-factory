@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>A-Frame VR Scene</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
     <script>
-        AFRAME.registerComponent('thumbstick-logging',{
+        AFRAME.registerComponent('thumbstick-logging', {
             init: function () {
                 this.el.addEventListener('thumbstickmoved', this.logThumbstick);
             },
@@ -17,38 +17,35 @@
                 if (evt.detail.x < -0.95) { console.log("LEFT"); }
                 if (evt.detail.x > 0.95) { console.log("RIGHT"); }
             }
-            });
+        });
     </script>
 </head>
 <body>
     <a-scene aframe-watcher="" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="">
-            <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
-            <!-- Add color-coded navigational spheres to the scene. x:red, y:yellow, z:purple -->
-            <a-sphere position="10 0 0" color="#FF0000"></a-sphere>
-            <a-sphere position="0 10 0" color="#FFFF00"></a-sphere>
-            <a-sphere position="0 0 10" color="#FF00FF"></a-sphere>
+        
+        <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
+        <a-sky color="#444444"></a-sky>
 
-            <!-- Add different shapes to the scene. Position, scale, and rotate them unique from one another. -->
-            <a-sphere position="-3.14753 2.57593 -4.62166" color="#0000FF" material="color: #150aae" scale="1 0.59248 1" rotation="-33.26764845868099 -0.8307888029396937 -44.23119586850929"></a-sphere>
-            <a-torus-knot position="-1 2 -11.09158" color="#0088FF" scale="1.51171 1.51171 1.51171"></a-torus-knot>
-            <a-dodecahedron position="2.03989 2.35166 -6.46064" color="#4488FF" material="color: #96225a" rotation="-8.95189259112398 -165.47937855850384 -8.280959013025788" scale="0.57572 0.57572 0.57572"></a-dodecahedron>
+        <a-entity id="rig">
+            <a-camera position="0 1.6 0"></a-camera>
+            
+            <a-entity id="leftHand" hand-controls="hand: left" thumbstick-logging></a-entity>
+            <a-entity id="rightHand" hand-controls="hand: right" thumbstick-logging></a-entity>
+        </a-entity>
 
-            <!-- Add text with my name to the scene. Add text describing color pattern for xyz-coordinates. -->
-            <a-text value="Jarred Navarro" position="-2.40194 2.15927 -4.11569" color="#FFB500" rotation="-1.7904931097838226 -5.501540748846164 12.29796611468799" scale="3.50702 3.50702 3.50702"></a-text>
-            <a-text value="x:red, y:yellow, z:purple" position="-3.06823 -3.57281 -10.38953" color="#FFB500" rotation="-1.7904931097838226 -5.501540748846164 12.29796611468799" scale="3.50702 3.50702 3.50702" text="color: #00ffd5; value: x:red, y:yellow, z:purple"></a-text>
+        <a-sphere position="10 0 0" color="#FF0000"></a-sphere>
+        <a-sphere position="0 10 0" color="#FFFF00"></a-sphere>
+        <a-sphere position="0 0 10" color="#FF00FF"></a-sphere>
 
-            <!-- Give the backgroun a color. -->
-            <a-sky color="#444444"></a-sky>
+        <a-sphere position="-3.14753 2.57593 -4.62166" color="#0000FF" material="color: #150aae" scale="1 0.59248 1" rotation="-33.26 -0.83 -44.23"></a-sphere>
+        <a-torus-knot position="-1 2 -11.09" color="#0088FF" scale="1.5 1.5 1.5"></a-torus-knot>
+        <a-dodecahedron position="2.03 2.35 -6.46" color="#4488FF" material="color: #96225a" rotation="-8.95 -165.47 -8.28" scale="0.57 0.57 0.57"></a-dodecahedron>
 
-            <!-- Add a box that I can grab for testing. -->
-            <a-box position="0 1.5 -0.5" color="#4488FF" scale="0.2 0.2 0.2" grabbable></a-box>
+        <a-text value="Welcome" position="-2.4 2.15 -4.11" color="#FFB500" rotation="-1.79 -5.5 12.29" scale="3.5 3.5 3.5"></a-text>
+        <a-text value="x:red, y:yellow, z:purple" position="-3.06 -3.57 -10.38" color="#00ffd5" rotation="-1.79 -5.5 12.29" scale="3.5 3.5 3.5"></a-text>
 
-            <!-- Add hands to the scene. -->
-            <a-entity meta-touch-controls="hand: left" thumbstick-logging></a-entity>
-            <a-entity meta-touch-controls="hand: right" thumbstick-logging></a-entity>
-
+        <a-box position="0 1.5 -0.5" color="#4488FF" scale="0.2 0.2 0.2" grabbable></a-box>
 
     </a-scene>
-
 </body>
 </html>
