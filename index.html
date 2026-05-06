@@ -3,48 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A-Frame VR Scene</title>
+    <title>A-Frame VR: Hands & Movement</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.2.0/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/super-hands@^3.0.3/dist/super-hands.min.js"></script>
+    
     <script>
         AFRAME.registerComponent('thumbstick-logging', {
             init: function () {
                 this.el.addEventListener('thumbstickmoved', this.logThumbstick);
             },
             logThumbstick: function (evt) {
-                if (evt.detail.y > 0.95) { console.log("DOWN"); }
-                if (evt.detail.y < -0.95) { console.log("UP"); }
-                if (evt.detail.x < -0.95) { console.log("LEFT"); }
-                if (evt.detail.x > 0.95) { console.log("RIGHT"); }
+                if (Math.abs(evt.detail.y) > 0.95 || Math.abs(evt.detail.x) > 0.95) {
+                    console.log("Joystick Moved:", evt.detail);
+                }
             }
         });
     </script>
 </head>
 <body>
-    <a-scene aframe-watcher="" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="">
+    <a-scene>
         
-        <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
+        <a-entity environment="preset: checkerboard"></a-entity>
         <a-sky color="#444444"></a-sky>
 
-        <a-entity id="rig">
-            <a-camera position="0 1.6 0"></a-camera>
+        <a-entity id="rig" movement-controls="speed: 0.2;">
+            <a-entity camera position="0 1.6 0" look-controls></a-entity>
             
-            <a-entity id="leftHand" hand-controls="hand: left" thumbstick-logging></a-entity>
-            <a-entity id="rightHand" hand-controls="hand: right" thumbstick-logging></a-entity>
+            <a-entity id="leftHand" 
+                      hand-controls="hand: left" 
+                      sphere-collider="objects: a-box" 
+                      super-hands
+                      thumbstick-logging>
+            </a-entity>
+            
+            <a-entity id="rightHand" 
+                      hand-controls="hand: right" 
+                      sphere-collider="objects: a-box" 
+                      super-hands>
+            </a-entity>
         </a-entity>
+
+        <a-box position="0 1.5 -1" 
+               color="#4488FF" 
+               scale="0.3 0.3 0.3" 
+               hoverable grabbable
+               material="opacity: 0.9; transparent: true">
+        </a-box>
 
         <a-sphere position="10 0 0" color="#FF0000"></a-sphere>
         <a-sphere position="0 10 0" color="#FFFF00"></a-sphere>
         <a-sphere position="0 0 10" color="#FF00FF"></a-sphere>
 
-        <a-sphere position="-3.14753 2.57593 -4.62166" color="#0000FF" material="color: #150aae" scale="1 0.59248 1" rotation="-33.26 -0.83 -44.23"></a-sphere>
-        <a-torus-knot position="-1 2 -11.09" color="#0088FF" scale="1.5 1.5 1.5"></a-torus-knot>
-        <a-dodecahedron position="2.03 2.35 -6.46" color="#4488FF" material="color: #96225a" rotation="-8.95 -165.47 -8.28" scale="0.57 0.57 0.57"></a-dodecahedron>
-
-        <a-text value="Welcome" position="-2.4 2.15 -4.11" color="#FFB500" rotation="-1.79 -5.5 12.29" scale="3.5 3.5 3.5"></a-text>
-        <a-text value="x:red, y:yellow, z:purple" position="-3.06 -3.57 -10.38" color="#00ffd5" rotation="-1.79 -5.5 12.29" scale="3.5 3.5 3.5"></a-text>
-
-        <a-box position="0 1.5 -0.5" color="#4488FF" scale="0.2 0.2 0.2" grabbable></a-box>
+        <a-text value="Use Left Stick to Walk" position="-1 2.5 -3" color="#FFB500"></a-text>
 
     </a-scene>
 </body>
