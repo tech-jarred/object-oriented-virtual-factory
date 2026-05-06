@@ -3,20 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A-Frame VR: Hands & Movement</title>
+    <title>Meta Quest 2: Hands and Movement</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/super-hands@^3.0.3/dist/super-hands.min.js"></script>
-    
+
     <script>
-        AFRAME.registerComponent('thumbstick-logging', {
+        // Custom component to move the rig based on thumbstick input
+        AFRAME.registerComponent('thumbstick-movement', {
+            schema: { speed: { default: 0.1 } },
             init: function () {
-                this.el.addEventListener('thumbstickmoved', this.logThumbstick);
+                this.movement = { x: 0, y: 0 };
+                this.el.addEventListener('thumbstickmoved', (evt) => {
+                    this.movement.x = evt.detail.x;
+                    this.movement.y = evt.detail.y;
+                });
             },
-            logThumbstick: function (evt) {
-                if (Math.abs(evt.detail.y) > 0.95 || Math.abs(evt.detail.x) > 0.95) {
-                    console.log("Joystick Moved:", evt.detail);
+            tick: function () {
+                // Modify the position parameters of the rig entity
+                if (Math.abs(this.movement.x) > 0.1 || Math.abs(this.movement.y) > 0.1) {
+                    const rig = document.getElementById('rig');
+                    const position = rig.getAttribute('position');
+                    
+                    // Simple movement logic: Translate joystick Y to Z-axis and X to X-axis
+                    position.x += this.movement.x * this.data.speed;
+                    position.z += this.movement.y * this.data.speed;
+                    
+                    rig.setAttribute('position', position);
                 }
             }
         });
@@ -25,38 +38,37 @@
 <body>
     <a-scene>
         
-        <a-entity environment="preset: checkerboard"></a-entity>
-        <a-sky color="#444444"></a-sky>
+        <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
 
-        <a-entity id="rig" movement-controls="speed: 0.2;">
+        <a-entity id="rig" position="0 0 0">
             <a-entity camera position="0 1.6 0" look-controls></a-entity>
             
             <a-entity id="leftHand" 
                       hand-controls="hand: left" 
-                      sphere-collider="objects: a-box" 
-                      super-hands
-                      thumbstick-logging>
+                      thumbstick-movement="speed: 0.1"
+                      sphere-collider="objects: .grabbable" 
+                      super-hands>
             </a-entity>
             
             <a-entity id="rightHand" 
                       hand-controls="hand: right" 
-                      sphere-collider="objects: a-box" 
+                      sphere-collider="objects: .grabbable" 
                       super-hands>
             </a-entity>
         </a-entity>
 
-        <a-box position="0 1.5 -1" 
+        <a-box class="grabbable"
+               position="0 1.5 -1" 
                color="#4488FF" 
                scale="0.3 0.3 0.3" 
-               hoverable grabbable
-               material="opacity: 0.9; transparent: true">
+               hoverable grabbable>
         </a-box>
 
         <a-sphere position="10 0 0" color="#FF0000"></a-sphere>
         <a-sphere position="0 10 0" color="#FFFF00"></a-sphere>
         <a-sphere position="0 0 10" color="#FF00FF"></a-sphere>
 
-        <a-text value="Use Left Stick to Walk" position="-1 2.5 -3" color="#FFB500"></a-text>
+        <a-sky color="#444444"></a-sky>
 
     </a-scene>
 </body>
