@@ -6,6 +6,19 @@
     <title>Document</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+    <script>
+        AFRAME.registerComponent('thumbstick-logging',{
+            init: function () {
+                this.el.addEventListener('thumbstickmoved', this.logThumbstick);
+            },
+            logThumbstick: function (evt) {
+                if (evt.detail.y > 0.95) { console.log("DOWN"); }
+                if (evt.detail.y < -0.95) { console.log("UP"); }
+                if (evt.detail.x < -0.95) { console.log("LEFT"); }
+                if (evt.detail.x > 0.95) { console.log("RIGHT"); }
+            }
+            });
+    </script>
 </head>
 <body>
     <a-scene aframe-watcher="" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="">
@@ -31,8 +44,10 @@
             <a-box position="0 1.5 -0.5" color="#4488FF" scale="0.2 0.2 0.2" grabbable></a-box>
 
             <!-- Add hands to the scene. -->
-            <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
-            <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+            <a-entity meta-touch-controls="hand: left" thumbstick-logging></a-entity>
+            <a-entity meta-touch-controls="hand: right" thumbstick-logging></a-entity>
+
+
     </a-scene>
 
 </body>
