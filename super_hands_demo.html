@@ -8,11 +8,14 @@
   <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.1.0/files/dist/aframe-event-set-component.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 </head>
 
 <body>
   <!-- Create the scene, add physics. -->
   <a-scene physics>
+    <!-- Add environment to background. -->
+    <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     <!-- Preload any assets that will be used in the scene. -->
     <a-assets></a-assets>
 
