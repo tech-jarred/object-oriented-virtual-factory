@@ -11,13 +11,18 @@
 </head>
 
 <body>
-  <a-scene physics="gravity: -9.8">
+  <!-- Create the scene, add physics. -->
+  <a-scene physics>
+    <!-- Preload any assets that will be used in the scene. -->
     <a-assets></a-assets>
-    <a-entity id="player" movement-controls>
+
+    <!-- Create the player. -->
+    <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera></a-camera>
       <a-entity sphere-collider="objects: a-box" super-hands static-body="shape: sphere; sphereRadius: 0.02" hand-controls="hand: left"></a-entity>
       <a-entity sphere-collider="objects: a-box" super-hands static-body="shape: sphere; sphereRadius: 0.02" hand-controls="hand: right"></a-entity>
     </a-entity>
+    
     <!-- hover & drag-drop won't have any obvious effect without some additional event handlers or components. See the examples page for more -->
     <a-plane static-body color="#0000FF" rotation="-90 -90 0" width="20" height="20"></a-plane>
     <a-box hoverable grabbable draggable droppable color="green" position="0 2 -1" depth="0.3" height="0.3" width="0.3" dynamic-body orientation></a-box>
