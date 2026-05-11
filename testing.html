@@ -47,35 +47,46 @@
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
-        value: {type: 'string'}
+        value: {type: 'string'},
+        cooldown: {type: 'number', default: 300} // Time in ms before it can be pressed again
       },
       init: function () {
-        this.el.addEventListener('grab-start', () => {
-          this.executeAction();
-        });
-        // Also support just "poking" it if you have colliders set up
-        this.el.addEventListener('hit', () => {
-           this.executeAction();
-        });
+        this.canPress = true; // Our "lock" variable
+
+        // We listen for grab-start (trigger pull) or hit (physical poke)
+        this.el.addEventListener('grab-start', () => this.executeAction());
       },
       executeAction: function() {
+        if (!this.canPress) return; // If locked, do nothing
+
+        this.canPress = false; // Lock the button
         const data = this.data;
+
+        // 1. Update Global Settings
         if (data.action === 'color') {
           window.factorySettings.color = data.value;
         } else if (data.action === 'size') {
-          // Increase or decrease size
           window.factorySettings.size += parseFloat(data.value);
-          // Clamp size so it doesn't become 0 or giant
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         }
-        console.log("Updated Settings:", window.factorySettings);
-        
-        // Visual Feedback: Button "clicks" visually
-        this.el.setAttribute('position', {x: 0, y: -0.05, z: 0});
-        setTimeout(() => this.el.setAttribute('position', {x: 0, y: 0, z: 0}), 100);
+
+        // 2. Push Animation (Z-axis)
+        // We move it -0.05 on the Z axis (into the wall)
+        this.el.setAttribute('position', {x: 0, y: 0, z: -0.05});
+
+        // 3. Reset Animation and Unlock after the cooldown
+        setTimeout(() => {
+          this.el.setAttribute('position', {x: 0, y: 0, z: 0}); // Pop back out
+          
+          // Wait a little longer before allowing another click
+          setTimeout(() => {
+            this.canPress = true; 
+          }, this.data.cooldown);
+          
+        }, 100); // Duration of the "pushed in" state
       }
     });
-
+    
     // 4. DESTRUCTION ZONE
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
