@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Stable Factory</title>
+  <title>A-Frame Factory Reverted</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -13,50 +13,54 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
-    window.factorySettings = { size: 0.3, color: "red", spawnRate: 2000 };
+    window.factorySettings = {
+      size: 0.3,
+      color: "red",
+      spawnRate: 2000
+    };
 
-    // 1. IMPROVED BUTTON COMPONENT
+    // THE UPDATED COMPONENT (Simple Revert + Delay)
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
         value: {type: 'string'},
-        depth: {type: 'number', default: 0.05} // How far it pushes in
+        cooldown: {type: 'number', default: 500} // Half-second delay
       },
       init: function () {
         this.canPress = true;
-        
-        // Listen for the trigger pull (grab-start)
-        // Even without 'grabbable', super-hands fires this event when you pull the trigger
+
         this.el.addEventListener('grab-start', () => {
           if (this.canPress) {
-            this.press();
+            this.executeAction();
           }
         });
       },
-      press: function () {
+      executeAction: function() {
         this.canPress = false;
         const data = this.data;
 
-        // Logic Update
+        // Apply logic
         if (data.action === 'color') {
           window.factorySettings.color = data.value;
         } else if (data.action === 'size') {
-          window.factorySettings.size = Math.max(0.1, Math.min(1.5, window.factorySettings.size + parseFloat(data.value)));
+          window.factorySettings.size += parseFloat(data.value);
+          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         }
 
-        // Animation: Move locally on Z-axis (perpendicular to the parent wall)
-        // We use object3D for smooth, reliable local movement
-        this.el.object3D.position.z -= data.depth;
+        // REVERTED ANIMATION (Original Y-axis dip)
+        this.el.setAttribute('position', {x: 0, y: -0.05, z: 0});
 
         setTimeout(() => {
-          this.el.object3D.position.z += data.depth;
-          // Cooldown before next press allowed
-          setTimeout(() => { this.canPress = true; }, 200);
-        }, 150);
+          this.el.setAttribute('position', {x: 0, y: 0, z: 0});
+          
+          // Wait for the cooldown before allowing another click
+          setTimeout(() => {
+            this.canPress = true;
+          }, this.data.cooldown);
+        }, 100);
       }
     });
 
-    // 2. SPAWNER
     AFRAME.registerComponent('spawner', {
       init: function () {
         setInterval(() => {
@@ -74,7 +78,6 @@
       }
     });
 
-    // 3. DESTRUCTION ZONE
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
         this.el.addEventListener('collide', (e) => {
@@ -101,36 +104,35 @@
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
     <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
-    <a-entity position="-1.5 1.2 -2" rotation="0 30 0">
-      <a-box width="1.2" height="0.8" depth="0.05" color="#222" static-body></a-box>
-      
-      <a-entity position="-0.3 0.1 0.05">
-         <a-box class="button" width="0.2" height="0.2" depth="0.05" color="red" 
-                hoverable pressable-button="action: color; value: red"
-                event-set__hover="_event: hover-start; material.opacity: 0.7"
-                event-set__leave="_event: hover-end; material.opacity: 1"></a-box>
+    <a-entity position="-2 1 -2" rotation="0 45 0">
+      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
+
+      <a-entity position="-0.4 0.1 0.05">
+        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
+               hoverable grabbable pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
       <a-entity position="0 0.1 0.05">
-         <a-box class="button" width="0.2" height="0.2" depth="0.05" color="green" 
-                hoverable pressable-button="action: color; value: green"></a-box>
+        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
+               hoverable grabbable pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
-      <a-entity position="0.3 0.1 0.05">
-         <a-box class="button" width="0.2" height="0.2" depth="0.05" color="blue" 
-                hoverable pressable-button="action: color; value: blue"></a-box>
+      <a-entity position="0.4 0.1 0.05">
+        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
+               hoverable grabbable pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
-      <a-entity position="-0.2 -0.2 0.05">
-         <a-box class="button" width="0.3" height="0.15" depth="0.05" color="#777" 
-                hoverable pressable-button="action: size; value: 0.1"></a-box>
-         <a-text value="+SIZE" align="center" position="0 0 0.03" width="1.5"></a-text>
+      <a-entity position="-0.2 -0.3 0.05">
+        <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
+               hoverable grabbable pressable-button="action: size; value: 0.1"></a-box>
+        <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
-      <a-entity position="0.2 -0.2 0.05">
-         <a-box class="button" width="0.3" height="0.15" depth="0.05" color="#777" 
-                hoverable pressable-button="action: size; value: -0.1"></a-box>
-         <a-text value="-SIZE" align="center" position="0 0 0.03" width="1.5"></a-text>
+      <a-entity position="0.2 -0.3 0.05">
+        <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
+               hoverable grabbable pressable-button="action: size; value: -0.1"></a-box>
+        <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
 
