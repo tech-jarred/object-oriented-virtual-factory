@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Best Practice Factory</title>
+  <title>A-Frame Factory with Laser GUI</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -10,10 +10,26 @@
   <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+  <script src="https://unpkg.com/aframe-gui@0.3.0/dist/aframe-gui.min.js"></script>
 
   <script>
-    window.factorySettings = { size: 0.3, color: "red", spawnRate: 2000 };
+    // 1. GLOBAL SETTINGS
+    window.factorySettings = {
+      size: 0.3,
+      color: "red",
+      spawnRate: 2000
+    };
 
+    // 2. GUI FUNCTIONS
+    window.setSize = function(data) {
+      let newSize = 0.1 + (data.detail.percent * 1.4);
+      window.factorySettings.size = newSize;
+    };
+    window.setColorRed = function() { window.factorySettings.color = "red"; };
+    window.setColorGreen = function() { window.factorySettings.color = "green"; };
+    window.setColorBlue = function() { window.factorySettings.color = "blue"; };
+
+    // 3. SPAWNER COMPONENT
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -22,36 +38,28 @@
       createEntity: function () {
         let el = document.createElement('a-box');
         const spawnPos = this.el.object3D.position;
+        const currentSize = window.factorySettings.size;
+        const currentColor = window.factorySettings.color;
+
         el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
-        el.setAttribute('scale', {x: 0.3, y: 0.3, z: 0.3});
-        el.setAttribute('color', window.factorySettings.color);
-        
-        // BEST PRACTICE: 'allowSleep: false' ensures the physics body stays active
-        // so it never misses a collision event with the sensor.
+        el.setAttribute('scale', {x: currentSize, y: currentSize, z: currentSize});
+        el.setAttribute('color', currentColor);
         el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
-        
+        el.setAttribute('hoverable', '');
+        el.setAttribute('grabbable', '');
         el.classList.add('spawned-item');
         this.el.sceneEl.appendChild(el);
       }
     });
 
+    // 4. DESTRUCTION ZONE
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
-        // 'collide' is the primary event name for CANNON.js bodies 
-        // that have emitCollisionEvents set to true.
         this.el.addEventListener('collide', (e) => {
-          // In the CANNON driver, detail.body.el is the 'other' entity involved.
           const collidedEl = e.detail.body.el;
-
           if (collidedEl && collidedEl.classList.contains('spawned-item')) {
-            console.log("CANNON Collision Detected - Removing Item");
-            
-            // Still using setTimeout(0) to ensure we don't remove 
-            // the body while the engine is in the middle of a 'step'.
             setTimeout(() => {
-              if (collidedEl.parentNode) {
-                collidedEl.parentNode.removeChild(collidedEl);
-              }
+              if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl);
             }, 0);
           }
         });
@@ -62,16 +70,48 @@
 
 <body>
   <a-scene physics="debug: false">
-    
     <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     
     <a-entity id="player" movement-controls="speed: 0.15">
-      <a-camera></a-camera>
+      <a-camera position="0 1.6 0"></a-camera>
+      
+      <a-entity id="leftHand"
+                laser-controls="hand: left"
+                raycaster="objects: [gui-interactable]; far: 10; showLine: true"
+                sphere-collider="objects: .spawned-item" 
+                super-hands 
+                static-body="shape: sphere; sphereRadius: 0.1">
+      </a-entity>
+
+      <a-entity id="rightHand"
+                hand-controls="hand: right"
+                sphere-collider="objects: .spawned-item" 
+                super-hands 
+                static-body="shape: sphere; sphereRadius: 0.1">
+      </a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
     
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+
+    <a-gui-flex-container
+        flex-direction="column" justify-content="center" align-items="center"
+        component-padding="0.1" width="3" height="4.5"
+        position="-3 2 -4" rotation="0 30 0">
+        
+        <a-gui-slider 
+            width="2.5" height="0.5"
+            onclick="setSize" 
+            percent="0.25"
+            label="Size">
+        </a-gui-slider>
+
+        <a-gui-button width="2.2" height="0.6" onclick="setColorRed" value="Red" font-color="red"></a-gui-button>
+        <a-gui-button width="2.2" height="0.6" onclick="setColorGreen" value="Green" font-color="green"></a-gui-button>
+        <a-gui-button width="2.2" height="0.6" onclick="setColorBlue" value="Blue" font-color="blue"></a-gui-button>
+
+    </a-gui-flex-container>
 
     <a-box 
         physics-destruction
