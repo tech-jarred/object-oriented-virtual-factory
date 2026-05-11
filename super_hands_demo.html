@@ -9,30 +9,7 @@
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
   <script src="https://rawgit.com/ngokevin/aframe-event-set-component/master/dist/aframe-event-set-component.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
-  <script>
-      AFRAME.registerComponent('spawner', {
-        init: function () {
-          this.spawnTimer = null;
-        },
-
-        startSpawning: function () {
-          // Spawn every 2000ms (2 seconds)
-          this.spawnTimer = setInterval(() => {
-            this.createEntity();
-          }, 2000);
-        },
-
-        createEntity: function () {
-          let el = document.createElement('a-box');
-
-          // Set static attributes
-          el.setAttribute('position', '0 5 -2');
-          el.setAttribute('dynamic-body', ''); // Physics enabled
-
-          this.el.sceneEl.appendChild(el);
-        }
-      });
-  </script>
+  <script src="https://rawgit.com/rdub80/aframe-gui/master/dist/aframe-gui.min.js"></script>
 </head>
 
 <body>
