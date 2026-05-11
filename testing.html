@@ -55,14 +55,20 @@
     // 3. UPDATED DELETION ZONE COMPONENT
     AFRAME.registerComponent('destruction-zone', {
       init: function () {
-        // This event is fired because of the 'contactEventName' in the a-scene
         this.el.addEventListener('collisestart', (e) => {
-          // In A-Frame Physics, detail.targetEl is the entity hitting this one
-          const collidedEl = e.detail.targetEl;
+          // Try to find the entity in common event locations
+          const collidedEl = e.detail.targetEl || (e.detail.body ? e.detail.body.el : null);
           
           if (collidedEl && collidedEl.classList.contains('spawned-item')) {
-            console.log("Entity Deleted:", collidedEl.id);
-            collidedEl.parentNode.removeChild(collidedEl);
+            console.log("Despawning entity...");
+            
+            // Use a timeout of 0 to move the deletion to the next tick.
+            // Physics engines hate it when you delete an object in the middle of a collision calculation.
+            setTimeout(() => {
+              if (collidedEl.parentNode) {
+                collidedEl.parentNode.removeChild(collidedEl);
+              }
+            }, 0);
           }
         });
       }
@@ -88,7 +94,7 @@
 
     <a-box 
         destruction-zone
-        static-body 
+        static-body="shape: box; sensor: true" 
         position="-5 1 -5" 
         width="6" height="3" depth="1" 
         color="red" 
