@@ -76,7 +76,7 @@
         console.log("Updated Settings:", window.factorySettings);
         
         // Visual Feedback: Move "into" the panel
-        this.el.setAttribute('position', {x: 0, y: 0, z: -0.05});
+        this.el.setAttribute('position', {x: 0, y: 0, z: -0.025});
       }
     });
 
@@ -100,8 +100,8 @@
     
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.1" hand-controls="hand: left"></a-entity>
-      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.1" hand-controls="hand: right"></a-entity>
+      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.05" hand-controls="hand: left"></a-entity>
+      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.05" hand-controls="hand: right"></a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
