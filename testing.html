@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Tactile Factory</title>
+  <title>A-Frame Tactile Factory - Mixins & Precise Controls</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -46,33 +46,20 @@
       },
       init: function () {
         this.isHovered = false;
-
-        // Initialize two sound components: one for 'down', one for 'up'
-        this.el.setAttribute('sound__down', {
-          src: '#soundDown',
-          autoplay: false,
-          poolSize: 5
-        });
-        this.el.setAttribute('sound__up', {
-          src: '#soundUp',
-          autoplay: false,
-          poolSize: 5
-        });
-
+        
+        // Audio is now handled by the mixin, we just play it
         this.el.addEventListener('hover-start', (e) => {
           if (!this.isHovered) {
             this.isHovered = true;
             this.executeAction();
-            // Play the "Down" sound
-            this.el.components.sound__down.playSound();
+            if(this.el.components.sound__down) this.el.components.sound__down.playSound();
           }
         });
 
         this.el.addEventListener('hover-end', () => {
           this.isHovered = false;
           this.el.setAttribute('position', {x: 0, y: 0, z: 0});
-          // Play the "Up" sound
-          this.el.components.sound__up.playSound();
+          if(this.el.components.sound__up) this.el.components.sound__up.playSound();
         });
       },
       executeAction: function() {
@@ -105,14 +92,41 @@
     <a-assets>
       <audio id="soundDown" src="sources/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/button_up.wav" preload="auto"></audio>
+
+      <a-mixin id="button-base"
+        geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1"
+        hoverable
+        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
+        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
+      </a-mixin>
+
+      <a-mixin id="button-size"
+        geometry="primitive: box; width: 0.3; height: 0.2; depth: 0.1"
+        material="color: #999"
+        hoverable
+        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
+        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
+      </a-mixin>
     </a-assets>
 
     <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.05" hand-controls="hand: left"></a-entity>
-      <a-entity sphere-collider="objects: .spawned-item, .button" super-hands static-body="shape: sphere; sphereRadius: 0.05" hand-controls="hand: right"></a-entity>
+      
+      <a-entity id="lHand"
+        hand-controls="hand: left"
+        sphere-collider="objects: .spawned-item, .button"
+        super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup"
+        static-body="shape: sphere; sphereRadius: 0.05">
+      </a-entity>
+      
+      <a-entity id="rHand"
+        hand-controls="hand: right"
+        sphere-collider="objects: .spawned-item, .button"
+        super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup"
+        static-body="shape: sphere; sphereRadius: 0.05">
+      </a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
@@ -123,34 +137,35 @@
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
       <a-entity position="-0.4 0.1 0.05">
-        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
-               hoverable pressable-button="action: color; value: red"></a-box>
+        <a-box mixin="button-base" material="color: red" class="button"
+               pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
       <a-entity position="0 0.1 0.05">
-        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
-               hoverable pressable-button="action: color; value: green"></a-box>
+        <a-box mixin="button-base" material="color: green" class="button"
+               pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
       <a-entity position="0.4 0.1 0.05">
-        <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
-               hoverable pressable-button="action: color; value: blue"></a-box>
+        <a-box mixin="button-base" material="color: blue" class="button"
+               pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
       <a-entity position="-0.2 -0.3 0.05">
-        <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable pressable-button="action: size; value: 0.1"></a-box>
+        <a-box mixin="button-size" class="button"
+               pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
       <a-entity position="0.2 -0.3 0.05">
-        <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable pressable-button="action: size; value: -0.1"></a-box>
+        <a-box mixin="button-size" class="button"
+               pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
 
-    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
+           position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
 
   </a-scene>
 </body>
