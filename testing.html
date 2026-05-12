@@ -4,7 +4,6 @@
   <title>A-Frame Tactile Factory</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
-    // Fix for super-hands/extras conflict
     delete AFRAME.components["grabbable"];
   </script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
@@ -14,14 +13,12 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
-    // 1. GLOBAL SETTINGS
     window.factorySettings = {
       size: 0.3,
       color: "red",
       spawnRate: 2000
     };
 
-    // 2. SPAWNER (Reads live settings)
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -31,7 +28,6 @@
         let el = document.createElement('a-box');
         const spawnPos = this.el.object3D.position;
         const s = window.factorySettings.size;
-
         el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
         el.setAttribute('scale', {x: s, y: s, z: s});
         el.setAttribute('color', window.factorySettings.color);
@@ -43,26 +39,40 @@
       }
     });
 
-    // 3. PHYSICAL BUTTON COMPONENT (Hover Logic)
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
         value: {type: 'string'}
       },
       init: function () {
-        this.isHovered = false; // Our "Pressed" latch variable
+        this.isHovered = false;
+
+        // Initialize two sound components: one for 'down', one for 'up'
+        this.el.setAttribute('sound__down', {
+          src: '#soundDown',
+          autoplay: false,
+          poolSize: 5
+        });
+        this.el.setAttribute('sound__up', {
+          src: '#soundUp',
+          autoplay: false,
+          poolSize: 5
+        });
 
         this.el.addEventListener('hover-start', (e) => {
           if (!this.isHovered) {
             this.isHovered = true;
             this.executeAction();
+            // Play the "Down" sound
+            this.el.components.sound__down.playSound();
           }
         });
 
         this.el.addEventListener('hover-end', () => {
-          this.isHovered = false; // Reset the latch when hand pulls away
-          // Return button to original position
+          this.isHovered = false;
           this.el.setAttribute('position', {x: 0, y: 0, z: 0});
+          // Play the "Up" sound
+          this.el.components.sound__up.playSound();
         });
       },
       executeAction: function() {
@@ -73,14 +83,10 @@
           window.factorySettings.size += parseFloat(data.value);
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         }
-        console.log("Updated Settings:", window.factorySettings);
-        
-        // Visual Feedback: Move "into" the panel
         this.el.setAttribute('position', {x: 0, y: 0, z: -0.025});
       }
     });
 
-    // 4. DESTRUCTION ZONE
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
         this.el.addEventListener('collide', (e) => {
@@ -96,6 +102,11 @@
 
 <body>
   <a-scene physics="debug: false">
+    <a-assets>
+      <audio id="soundDown" src="sources/button_down.wav" preload="auto"></audio>
+      <audio id="soundUp" src="sources/button_up.wav" preload="auto"></audio>
+    </a-assets>
+
     <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     
     <a-entity id="player" movement-controls="speed: 0.15">
