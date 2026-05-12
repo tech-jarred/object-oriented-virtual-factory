@@ -71,7 +71,7 @@
         console.log("Updated Settings:", window.factorySettings);
         
         // Visual Feedback: Button "clicks" visually
-        this.el.setAttribute('position', {x: 0, y: -0.05, z: 0});
+        this.el.setAttribute('position', {x: 0, y: 0, z: -0.05});
         setTimeout(() => this.el.setAttribute('position', {x: 0, y: 0, z: 0}), 100);
       }
     });
@@ -137,7 +137,7 @@
       </a-entity>
     </a-entity>
 
-    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -5.8" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
 
   </a-scene>
 </body>
