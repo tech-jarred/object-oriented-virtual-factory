@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Full Tactile Factory</title>
+  <title>A-Frame Tactile Factory - Final</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
-    // Essential for super-hands compatibility with certain A-Frame versions
+    // Fix for super-hands compatibility
     delete AFRAME.components["grabbable"];
   </script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
@@ -21,25 +21,23 @@
       spawnRate: 2000
     };
 
-    // 2. SPAWNER
+    // 2. SPAWNER COMPONENT
     AFRAME.registerComponent('spawner', {
-      init: function () { this.startSpawning(); },
-      startSpawning: function () {
-        this.spawnTimer = setInterval(() => { this.createEntity(); }, window.factorySettings.spawnRate);
-      },
-      createEntity: function () {
-        let el = document.createElement('a-box');
-        const spawnPos = this.el.object3D.position;
-        const s = window.factorySettings.size;
+      init: function () {
+        this.spawnTimer = setInterval(() => {
+          let el = document.createElement('a-box');
+          const spawnPos = this.el.object3D.position;
+          const s = window.factorySettings.size;
 
-        el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
-        el.setAttribute('scale', {x: s, y: s, z: s});
-        el.setAttribute('color', window.factorySettings.color);
-        el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
-        el.setAttribute('hoverable', '');
-        el.setAttribute('grabbable', '');
-        el.classList.add('spawned-item');
-        this.el.sceneEl.appendChild(el);
+          el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
+          el.setAttribute('scale', {x: s, y: s, z: s});
+          el.setAttribute('color', window.factorySettings.color);
+          el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
+          el.setAttribute('hoverable', '');
+          el.setAttribute('grabbable', '');
+          el.classList.add('spawned-item');
+          this.el.sceneEl.appendChild(el);
+        }, window.factorySettings.spawnRate);
       }
     });
 
@@ -53,10 +51,9 @@
       init: function () {
         this.canPress = true;
 
-        // Collision-based trigger
         this.el.addEventListener('collide', (e) => {
           const hitEl = e.detail.body.el;
-          // Trigger only if a hand hits it and the button isn't on cooldown
+          // Only trigger if a hand hits it and we aren't in cooldown
           if (this.canPress && hitEl && hitEl.hasAttribute('hand-controls')) {
             this.executeAction();
           }
@@ -66,6 +63,7 @@
         this.canPress = false;
         const data = this.data;
 
+        // Logic
         if (data.action === 'color') {
           window.factorySettings.color = data.value;
         } else if (data.action === 'size') {
@@ -73,11 +71,10 @@
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         }
 
-        // Push into the wall (Local Z-axis)
+        // Animation
         this.el.object3D.position.z -= 0.05;
-
         setTimeout(() => {
-          this.el.object3D.position.z += 0.05; // Pop back out
+          this.el.object3D.position.z += 0.05;
           setTimeout(() => { this.canPress = true; }, this.data.cooldown);
         }, 150);
       }
@@ -103,20 +100,35 @@
     
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      <a-entity sphere-collider="objects: .spawned-item" super-hands static-body="shape: sphere; sphereRadius: 0.07" physics-collider hand-controls="hand: left"></a-entity>
-      <a-entity sphere-collider="objects: .spawned-item" super-hands static-body="shape: sphere; sphereRadius: 0.07" physics-collider hand-controls="hand: right"></a-entity>
+      
+      <a-entity id="leftHand" 
+                hand-controls="hand: left" 
+                static-body="shape: sphere; sphereRadius: 0.05; emitCollisionEvents: true" 
+                physics-collider
+                super-hands 
+                sphere-collider="objects: .spawned-item">
+      </a-entity>
+
+      <a-entity id="rightHand" 
+                hand-controls="hand: right" 
+                static-body="shape: sphere; sphereRadius: 0.05; emitCollisionEvents: true" 
+                physics-collider
+                super-hands 
+                sphere-collider="objects: .spawned-item">
+      </a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
-    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+    
+    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
-    <a-entity position="-2 1 -2" rotation="0 45 0">
+    <a-entity position="-2 1.2 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444" static-body></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
       <a-entity position="-0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
-               static-body="shape: box; sensor: true"
+               static-body="shape: box; sensor: true; emitCollisionEvents: true" 
                pressable-button="action: color; value: red"
                event-set__hover="_event: hover-start; material.opacity: 0.7"
                event-set__leave="_event: hover-end; material.opacity: 1"></a-box>
@@ -124,32 +136,35 @@
 
       <a-entity position="0 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
-               static-body="shape: box; sensor: true"
+               static-body="shape: box; sensor: true; emitCollisionEvents: true" 
                pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
       <a-entity position="0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
-               static-body="shape: box; sensor: true"
+               static-body="shape: box; sensor: true; emitCollisionEvents: true" 
                pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
       <a-entity position="-0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               static-body="shape: box; sensor: true"
+               static-body="shape: box; sensor: true; emitCollisionEvents: true" 
                pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
       <a-entity position="0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               static-body="shape: box; sensor: true"
+               static-body="shape: box; sensor: true; emitCollisionEvents: true" 
                pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
 
-    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+    <a-box physics-destruction 
+           static-body="shape: box; emitCollisionEvents: true; sensor: true" 
+           position="0.44 0.5 -5.8" width="6" height="2" depth="4" color="red" opacity="0.3">
+    </a-box>
 
   </a-scene>
 </body>
