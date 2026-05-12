@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Tactile Factory - Proximity Version</title>
+  <title>A-Frame Tactile Factory - Physics Restored</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -12,13 +12,14 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
+    // 1. GLOBAL SETTINGS
     window.factorySettings = {
       size: 0.3,
       color: "red",
       spawnRate: 2000
     };
 
-    // 1. SPAWNER
+    // 2. SPAWNER (Working version)
     AFRAME.registerComponent('spawner', {
       init: function () {
         this.spawnTimer = setInterval(() => {
@@ -29,43 +30,30 @@
           el.setAttribute('scale', {x: s, y: s, z: s});
           el.setAttribute('color', window.factorySettings.color);
           el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
+          el.setAttribute('grabbable', '');
           el.classList.add('spawned-item');
           this.el.sceneEl.appendChild(el);
         }, window.factorySettings.spawnRate);
       }
     });
 
-    // 2. PROXIMITY BUTTON COMPONENT (No Physics Events Required)
+    // 3. PHYSICAL BUTTON (Modeled after Deletion Zone logic)
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
         value: {type: 'string'},
-        dist: {type: 'number', default: 0.15} // Detection distance
+        cooldown: {type: 'number', default: 500}
       },
       init: function () {
         this.canPress = true;
-        this.hands = null;
-        this.originalY = this.el.object3D.position.y;
-      },
-      tick: function () {
-        if (!this.canPress) return;
 
-        // Find hands if we haven't yet
-        if (!this.hands) {
-          this.hands = document.querySelectorAll('[hand-controls]');
-        }
-
-        // Check distance to each hand
-        this.hands.forEach(hand => {
-          // Calculate distance between hand and button
-          let handPos = new THREE.Vector3();
-          let buttonPos = new THREE.Vector3();
-          hand.object3D.getWorldPosition(handPos);
-          this.el.object3D.getWorldPosition(buttonPos);
-
-          let distance = handPos.distanceTo(buttonPos);
-
-          if (distance < this.data.dist) {
+        // Using 'collisestart' to match your working deletion zone logic
+        this.el.addEventListener('collisestart', (e) => {
+          // Identify the other object (the hand)
+          const hitEl = e.detail.targetEl;
+          
+          // If a hand-controlled entity hits the button and we aren't cooling down
+          if (this.canPress && hitEl && hitEl.hasAttribute('hand-controls')) {
             this.executeAction();
           }
         });
@@ -74,31 +62,30 @@
         this.canPress = false;
         const data = this.data;
 
-        // Logic Update
+        // Logic update
         if (data.action === 'color') {
           window.factorySettings.color = data.value;
         } else if (data.action === 'size') {
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size + parseFloat(data.value)));
         }
 
-        // Animation
-        this.el.object3D.position.y = this.originalY - 0.05;
+        // Animation: Physical dip
+        this.el.object3D.position.y -= 0.05;
 
-        // Reset & Cooldown
         setTimeout(() => {
-          this.el.object3D.position.y = this.originalY;
+          this.el.object3D.position.y += 0.05;
           setTimeout(() => {
             this.canPress = true;
-          }, 400); // 400ms debounce
+          }, this.data.cooldown);
         }, 150);
       }
     });
 
-    // 3. DESTRUCTION ZONE
+    // 4. DELETION ZONE (Your working version)
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
-        this.el.addEventListener('collide', (e) => {
-          const collidedEl = e.detail.body.el;
+        this.el.addEventListener('collisestart', (e) => {
+          const collidedEl = e.detail.targetEl;
           if (collidedEl && collidedEl.classList.contains('spawned-item')) {
             setTimeout(() => { if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl); }, 0);
           }
@@ -109,51 +96,60 @@
 </head>
 
 <body>
-  <a-scene physics="debug: false">
-    <a-entity environment="preset: checkerboard"></a-entity>
+  <a-scene physics="contactEventName: collisestart; debug: false">
+    <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     
-    <a-entity id="player">
+    <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      <a-entity hand-controls="hand: left"></a-entity>
-      <a-entity hand-controls="hand: right"></a-entity>
+      <a-entity id="leftHand" hand-controls="hand: left" static-body="shape: sphere; sphereRadius: 0.05" super-hands></a-entity>
+      <a-entity id="rightHand" hand-controls="hand: right" static-body="shape: sphere; sphereRadius: 0.05" super-hands></a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
     <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
     <a-entity position="-2 1.2 -2" rotation="0 45 0">
-      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-box width="1.5" height="1" depth="0.1" color="#444" static-body></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
       <a-entity position="-0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
+               static-body="shape: box; sensor: true"
                pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
       <a-entity position="0 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
+               static-body="shape: box; sensor: true"
                pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
       <a-entity position="0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
+               static-body="shape: box; sensor: true"
                pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
       <a-entity position="-0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
+               static-body="shape: box; sensor: true"
                pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
       <a-entity position="0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
+               static-body="shape: box; sensor: true"
                pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
 
-    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+    <a-box physics-destruction 
+           static-body="shape: box; sensor: true" 
+           position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3">
+    </a-box>
+
   </a-scene>
 </body>
 </html>
