@@ -4,12 +4,13 @@
   <script>
     delete AFRAME.components["grabbable"];
   </script>
-  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
   <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
   <script src="https://rawgit.com/ngokevin/aframe-event-set-component/master/dist/aframe-event-set-component.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
   <script src="https://rawgit.com/rdub80/aframe-gui/master/dist/aframe-gui.min.js"></script>
+  <script src="https://unpkg.com/aframe-haptics-component/dist/aframe-haptics-component.min.js"></script>
 </head>
 
 <body>
@@ -23,8 +24,21 @@
     <!-- Create the player. -->
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera></a-camera>
-      <a-entity sphere-collider="objects: a-box" super-hands static-body="shape: sphere; sphereRadius: 0.1" hand-controls="hand: left"></a-entity>
-      <a-entity sphere-collider="objects: a-box" super-hands static-body="shape: sphere; sphereRadius: 0.1" hand-controls="hand: right"></a-entity>
+      <a-entity
+        sphere-collider="objects: a-box"
+        super-hands="grabStartButtons: triggerdown, gripdown; grabEndButtons: triggerup, gripup; dragStartButtons: triggerdown, gripdown; dragEndButtons: triggerup, gripup"
+        haptics="events: grab-start; durability: 50; force: 0.5"
+        static-body="shape: sphere; sphereRadius: 0.1"
+        hand-controls="hand: left">
+      </a-entity>
+
+      <a-entity
+        sphere-collider="objects: a-box"
+        super-hands="grabStartButtons: triggerdown, gripdown; grabEndButtons: triggerup, gripup; dragStartButtons: triggerdown, gripdown; dragEndButtons: triggerup, gripup"
+        haptics="events: grab-start; durability: 50; force: 0.5"
+        static-body="shape: sphere; sphereRadius: 0.1"
+        hand-controls="hand: right">
+      </a-entity>
     </a-entity>
     
     <!-- hover & drag-drop won't have any obvious effect without some additional event handlers or components. See the examples page for more -->
