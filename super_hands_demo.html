@@ -43,7 +43,7 @@
     
     <!-- hover & drag-drop won't have any obvious effect without some additional event handlers or components. See the examples page for more -->
     <a-plane static-body color="#0000FF" rotation="-90 -90 0" width="20" height="20"></a-plane>
-    <a-box grabbable draggable droppable physics-grab color="red" position="0 2 -1" depth="0.3" height="0.3" width="0.3" dynamic-body orientation event-set__grabstart="_event: grab-start; material.color: green" event-set__grabend="_event: grab-end; color: red"></a-box>
+    <a-box grabbable draggable droppable physics-grab color="red" position="0 2 -1" depth="0.3" height="0.3" width="0.3" dynamic-body="mass: 2; linearDamping: 0.01; angularDamping: 0.01" orientation></a-box>
     <a-sphere id="testing" position="1.44932 1.87255 -11.84318" spawner></a-sphere>
   </a-scene>
 </body>
