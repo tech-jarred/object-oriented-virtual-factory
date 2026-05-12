@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Factory - Stable Trigger</title>
+  <title>A-Frame Tactile Factory - Stable</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
-    // Critical fix for super-hands event bubbling
+    // Essential for super-hands compatibility
     delete AFRAME.components["grabbable"];
   </script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
   <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
-  <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
@@ -21,7 +20,7 @@
       spawnRate: 2000
     };
 
-    // 2. SPAWNER COMPONENT
+    // 2. SPAWNER
     AFRAME.registerComponent('spawner', {
       init: function () {
         this.spawnTimer = setInterval(() => {
@@ -41,42 +40,48 @@
       }
     });
 
-    // 3. PRESSABLE BUTTON COMPONENT (Trigger-based, No Grab)
+    // 3. PHYSICAL BUTTON COMPONENT
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
         value: {type: 'string'},
-        cooldown: {type: 'number', default: 250} 
+        cooldown: {type: 'number', default: 400} 
       },
       init: function () {
         this.canPress = true;
-
-        // Even without 'grabbable', super-hands fires 'grab-start' when you pull the trigger
-        // while the hand collider is overlapping the button.
-        this.el.addEventListener('grab-start', () => {
-          if (this.canPress) {
-            this.executeAction();
-          }
-        });
+        // Bind the handler so 'this' context stays correct
+        this.onCollision = this.onCollision.bind(this);
+        this.el.addEventListener('collide', this.onCollision);
+      },
+      onCollision: function (e) {
+        const hitEl = e.detail.body.el;
+        // Only trigger if a hand hits it and we aren't in cooldown
+        if (this.canPress && hitEl && hitEl.hasAttribute('hand-controls')) {
+          this.executeAction();
+        }
       },
       executeAction: function() {
-        this.canPress = false; 
+        this.canPress = false;
         const data = this.data;
 
-        // Update logic
+        // Logic Update
         if (data.action === 'color') {
           window.factorySettings.color = data.value;
         } else if (data.action === 'size') {
-          window.factorySettings.size += parseFloat(data.value);
-          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
+          let change = parseFloat(data.value);
+          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size + change));
         }
 
-        // Original Animation: Dip on Y-axis
-        this.el.setAttribute('position', {x: 0, y: 0, z: -0.05});
-        
+        // Animation - Using object3D directly prevents "jumping" or flashing
+        // We move it locally on the Y axis (the original dip you liked)
+        this.el.object3D.position.y -= 0.05;
+
         setTimeout(() => {
-          this.el.setAttribute('position', {x: 0, y: 0, z: 0});
-          setTimeout(() => { this.canPress = true; }, this.data.cooldown);
+          this.el.object3D.position.y += 0.05;
+          // Cooldown reset
+          setTimeout(() => {
+            this.canPress = true;
+          }, this.data.cooldown);
         }, 100);
       }
     });
@@ -101,17 +106,17 @@
     
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      
-      <a-entity sphere-collider="objects: .spawned-item, .button" 
+      <a-entity id="leftHand" 
+                hand-controls="hand: left" 
+                static-body="shape: sphere; sphereRadius: 0.05; emitCollisionEvents: true" 
                 super-hands 
-                static-body="shape: sphere; sphereRadius: 0.05" 
-                hand-controls="hand: left">
+                sphere-collider="objects: .spawned-item">
       </a-entity>
-
-      <a-entity sphere-collider="objects: .spawned-item, .button" 
+      <a-entity id="rightHand" 
+                hand-controls="hand: right" 
+                static-body="shape: sphere; sphereRadius: 0.05; emitCollisionEvents: true" 
                 super-hands 
-                static-body="shape: sphere; sphereRadius: 0.05" 
-                hand-controls="hand: right">
+                sphere-collider="objects: .spawned-item">
       </a-entity>
     </a-entity>
     
@@ -119,33 +124,38 @@
     <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
     <a-entity position="-2 1 -2" rotation="0 45 0">
-      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-box width="1.5" height="1" depth="0.1" color="#444" static-body></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
       <a-entity position="-0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
-               hoverable pressable-button="action: color; value: red"></a-box>
+               static-body="shape: box; sensor: true; emitCollisionEvents: true"
+               pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
       <a-entity position="0 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
-               hoverable pressable-button="action: color; value: green"></a-box>
+               static-body="shape: box; sensor: true; emitCollisionEvents: true"
+               pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
       <a-entity position="0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
-               hoverable pressable-button="action: color; value: blue"></a-box>
+               static-body="shape: box; sensor: true; emitCollisionEvents: true"
+               pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
       <a-entity position="-0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable pressable-button="action: size; value: 0.1"></a-box>
+               static-body="shape: box; sensor: true; emitCollisionEvents: true"
+               pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
       <a-entity position="0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable pressable-button="action: size; value: -0.1"></a-box>
+               static-body="shape: box; sensor: true; emitCollisionEvents: true"
+               pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
