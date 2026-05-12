@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Tactile Factory - Latch State</title>
+  <title>A-Frame Tactile Factory</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
+    // Fix for super-hands/extras conflict
     delete AFRAME.components["grabbable"];
   </script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
@@ -20,7 +21,7 @@
       spawnRate: 2000
     };
 
-    // 2. SPAWNER
+    // 2. SPAWNER (Reads live settings)
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -42,25 +43,25 @@
       }
     });
 
-    // 3. PHYSICAL BUTTON COMPONENT (Latch Logic)
+    // 3. PHYSICAL BUTTON COMPONENT (Hover Logic)
     AFRAME.registerComponent('pressable-button', {
       schema: {
         action: {type: 'string'},
         value: {type: 'string'}
       },
       init: function () {
-        this.pressed = false; // The Latch variable
+        this.isHovered = false; // Our "Pressed" latch variable
 
-        this.el.addEventListener('grab-start', () => {
-          if (!this.pressed) {
-            this.pressed = true;
+        this.el.addEventListener('hover-start', (e) => {
+          if (!this.isHovered) {
+            this.isHovered = true;
             this.executeAction();
           }
         });
 
-        this.el.addEventListener('grab-end', () => {
-          this.pressed = false; // Reset the latch when trigger is released
-          // Visual Feedback: Button pops back out
+        this.el.addEventListener('hover-end', () => {
+          this.isHovered = false; // Reset the latch when hand pulls away
+          // Return button to original position
           this.el.setAttribute('position', {x: 0, y: 0, z: 0});
         });
       },
@@ -74,7 +75,7 @@
         }
         console.log("Updated Settings:", window.factorySettings);
         
-        // Visual Feedback: Button stays pushed in as long as trigger is held
+        // Visual Feedback: Move "into" the panel
         this.el.setAttribute('position', {x: 0, y: 0, z: -0.05});
       }
     });
@@ -112,28 +113,28 @@
 
       <a-entity position="-0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="red" 
-               hoverable grabbable pressable-button="action: color; value: red"></a-box>
+               hoverable pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
       <a-entity position="0 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="green" 
-               hoverable grabbable pressable-button="action: color; value: green"></a-box>
+               hoverable pressable-button="action: color; value: green"></a-box>
       </a-entity>
 
       <a-entity position="0.4 0.1 0.05">
         <a-box class="button" width="0.3" height="0.3" depth="0.1" color="blue" 
-               hoverable grabbable pressable-button="action: color; value: blue"></a-box>
+               hoverable pressable-button="action: color; value: blue"></a-box>
       </a-entity>
 
       <a-entity position="-0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable grabbable pressable-button="action: size; value: 0.1"></a-box>
+               hoverable pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
       <a-entity position="0.2 -0.3 0.05">
         <a-box class="button" width="0.3" height="0.2" depth="0.1" color="#999" 
-               hoverable grabbable pressable-button="action: size; value: -0.1"></a-box>
+               hoverable pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
