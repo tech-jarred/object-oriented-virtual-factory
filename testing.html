@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Tactile Factory - Mixins & Precise Controls</title>
+  <title>A-Frame Tactile Factory - Duck Physics Proxy</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -46,8 +46,6 @@
       },
       init: function () {
         this.isHovered = false;
-        
-        // Audio is now handled by the mixin, we just play it
         this.el.addEventListener('hover-start', (e) => {
           if (!this.isHovered) {
             this.isHovered = true;
@@ -55,7 +53,6 @@
             if(this.el.components.sound__down) this.el.components.sound__down.playSound();
           }
         });
-
         this.el.addEventListener('hover-end', () => {
           this.isHovered = false;
           this.el.setAttribute('position', {x: 0, y: 0, z: 0});
@@ -88,10 +85,11 @@
 </head>
 
 <body>
-  <a-scene physics="debug: false">
+  <a-scene physics="debug: true">
     <a-assets>
       <audio id="soundDown" src="sources/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/button_up.wav" preload="auto"></audio>
+      <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
 
       <a-mixin id="button-base"
         geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1"
@@ -131,6 +129,22 @@
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+
+    <a-box 
+      id="duck-physics-proxy"
+      class="spawned-item"
+      position="0 5 -5" 
+      width="0.4" height="0.4" depth="0.4" 
+      material="color: yellow; opacity: 0.2"
+      dynamic-body="mass: 1; allowSleep: false" 
+      grabbable hoverable>
+      
+      <a-entity 
+        gltf-model="#duck-regular" 
+        scale="0.1 0.1 0.1" 
+        position="0 -0.2 0">
+      </a-entity>
+    </a-box>
 
     <a-entity position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
