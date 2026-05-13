@@ -89,7 +89,13 @@
     <a-assets>
       <audio id="soundDown" src="sources/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/button_up.wav" preload="auto"></audio>
+      
+      <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-vader" src="sources/models/darth_vader_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-robo" src="sources/models/robo_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-tophat" src="sources/models/tophat_rubber_duck.glb"></a-asset-item>
 
       <a-mixin id="button-base"
         geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1"
@@ -105,75 +111,74 @@
         sound__down="src: #soundDown; autoplay: false; poolSize: 5"
         sound__up="src: #soundUp; autoplay: false; poolSize: 5">
       </a-mixin>
+
+      <a-mixin id="duck-proxy"
+        geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.4"
+        material="color: yellow; opacity: 0.2"
+        dynamic-body="mass: 1; allowSleep: false"
+        grabbable hoverable>
+      </a-mixin>
+
+      <a-mixin id="duck-model" scale="0.2 0.2 0.2"></a-mixin>
     </a-assets>
 
-    <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
+    <a-entity environment="preset: checkerboard; lighting: distant; intensity: 0.8" position="0 -10 0"></a-entity>
     
     <a-entity id="player" movement-controls="speed: 0.15">
       <a-camera position="0 1.6 0"></a-camera>
-      
-      <a-entity id="lHand"
-        hand-controls="hand: left"
-        sphere-collider="objects: .spawned-item, .button"
-        super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup"
-        static-body="shape: sphere; sphereRadius: 0.05">
-      </a-entity>
-      
-      <a-entity id="rHand"
-        hand-controls="hand: right"
-        sphere-collider="objects: .spawned-item, .button"
-        super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup"
-        static-body="shape: sphere; sphereRadius: 0.05">
-      </a-entity>
+      <a-entity id="lHand" hand-controls="hand: left" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
+      <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
     </a-entity>
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
+
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
-    <a-box 
-      id="duck-physics-proxy"
-      class="spawned-item"
-      position="0 5 -5" 
-      width="0.4" height="0.4" depth="0.4" 
-      material="color: yellow; opacity: 0.2"
-      dynamic-body="mass: 1; allowSleep: false" 
-      grabbable hoverable>
-      
-      <a-entity 
-        gltf-model="#duck-regular" 
-        scale="0.02 0.02 0.02" 
-        position="0 -0.2 0">
-      </a-entity>
-    </a-box>
+    <a-entity position="2 0 -3">
+      <a-box mixin="duck-proxy" position="-1 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-batman" position="0 -0.2 0"></a-entity>
+      </a-box>
+
+      <a-box mixin="duck-proxy" position="-0.5 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-bee" position="0 -0.2 0"></a-entity>
+      </a-box>
+
+      <a-box mixin="duck-proxy" position="0 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-vader" position="0 -0.2 0"></a-entity>
+      </a-box>
+
+      <a-box mixin="duck-proxy" position="0.5 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-robo" position="0 -0.2 0"></a-entity>
+      </a-box>
+
+      <a-box mixin="duck-proxy" position="1 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-regular" position="0 -0.2 0"></a-entity>
+      </a-box>
+
+      <a-box mixin="duck-proxy" position="1.5 0.5 0" class="spawned-item">
+        <a-entity mixin="duck-model" gltf-model="#duck-tophat" position="0 -0.2 0"></a-entity>
+      </a-box>
+    </a-entity>
 
     <a-entity position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
       <a-entity position="-0.4 0.1 0.05">
-        <a-box mixin="button-base" material="color: red" class="button"
-               pressable-button="action: color; value: red"></a-box>
+        <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
       </a-entity>
-
       <a-entity position="0 0.1 0.05">
-        <a-box mixin="button-base" material="color: green" class="button"
-               pressable-button="action: color; value: green"></a-box>
+        <a-box mixin="button-base" material="color: green" class="button" pressable-button="action: color; value: green"></a-box>
       </a-entity>
-
       <a-entity position="0.4 0.1 0.05">
-        <a-box mixin="button-base" material="color: blue" class="button"
-               pressable-button="action: color; value: blue"></a-box>
+        <a-box mixin="button-base" material="color: blue" class="button" pressable-button="action: color; value: blue"></a-box>
       </a-entity>
-
       <a-entity position="-0.2 -0.3 0.05">
-        <a-box mixin="button-size" class="button"
-               pressable-button="action: size; value: 0.1"></a-box>
+        <a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
-
       <a-entity position="0.2 -0.3 0.05">
-        <a-box mixin="button-size" class="button"
-               pressable-button="action: size; value: -0.1"></a-box>
+        <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
