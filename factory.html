@@ -13,13 +13,92 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
+    // Expanded settings to include arrays for scalability
     window.factorySettings = {
       size: 0.3,
-      color: "red",
       spawnRate: 2000,
-      quackSound: "sources/sounds/quack_1_sound.mp3" 
+      
+      // Sound logic
+      soundIndex: 0,
+      sounds: [
+        { name: "Squeak", file: "regular_squeak_sound.mp3" },
+        { name: "Quack 1", file: "quack_1_sound.mp3" },
+        { name: "Quack 2", file: "quack_2_sound.mp3" },
+        { name: "Bee Buzz", file: "bee_buzz_sound.mp3" },
+        { name: "Robo Beep", file: "robo_beep_sound.mp3" },
+        { name: "Darth Vader", file: "darth_vader_breath_sound.mp3" },
+        { name: "I'm Batman", file: "im_batman_sound.mp3" }
+      ],
+      get quackSound() { 
+        return "sources/sounds/" + this.sounds[this.soundIndex].file; 
+      }
     };
 
+    // selector-manager -- This component handles the carousel logic
+    AFRAME.registerComponent('selector-manager', {
+      schema: {
+        type: { type: 'string', default: 'sound' }, // Can be 'sound' or eventually 'model'
+        screenId: { type: 'string' }
+      },
+      init: function () {
+        this.updateDisplay();
+      },
+      // Move index forward or backward
+      cycle: function(direction) {
+        const settings = window.factorySettings;
+        const list = settings.sounds; // We'll point this to models later based on type
+        
+        // Use modulo to wrap around the array
+        // (index + delta + length) % length
+        settings.soundIndex = (settings.soundIndex + direction + list.length) % list.length;
+        
+        this.updateDisplay();
+      },
+      updateDisplay: function() {
+        const screen = document.querySelector(this.data.screenId);
+        if (screen) {
+          const currentName = window.factorySettings.sounds[window.factorySettings.soundIndex].name;
+          screen.setAttribute('value', currentName);
+        }
+      }
+    });
+
+    // Modified pressable-button to support the selector
+    AFRAME.registerComponent('pressable-button', {
+      schema: {
+        action: {type: 'string'}, // 'color', 'size', 'cycle'
+        value: {type: 'string'}  // for cycle, this will be '1' or '-1'
+      },
+      init: function () {
+        this.isHovered = false;
+        this.el.addEventListener('hover-start', () => {
+          if (!this.isHovered) {
+            this.isHovered = true;
+            this.executeAction();
+            if(this.el.components.sound__down) this.el.components.sound__down.playSound();
+          }
+        });
+        this.el.addEventListener('hover-end', () => {
+          this.isHovered = false;
+          this.el.setAttribute('position', {x: this.el.object3D.position.x, y: this.el.object3D.position.y, z: 0});
+          if(this.el.components.sound__up) this.el.components.sound__up.playSound();
+        });
+      },
+      executeAction: function() {
+        if (this.data.action === 'size') {
+          window.factorySettings.size += parseFloat(this.data.value);
+          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
+        } else if (this.data.action === 'cycle') {
+          // Find the manager on the parent panel and tell it to cycle
+          const manager = this.el.closest('[selector-manager]');
+          if (manager) manager.components['selector-manager'].cycle(parseInt(this.data.value));
+        }
+        // Button visual "push"
+        this.el.setAttribute('position', {x: this.el.object3D.position.x, y: this.el.object3D.position.y, z: -0.025});
+      }
+    });
+
+    // duck-logic -- Plays current sound
     AFRAME.registerComponent('duck-logic', {
       init: function () {
         this.canQuack = false;
@@ -38,60 +117,17 @@
         });
       },
       playQuack: function() {
-        if (this.el.components.sound) {
-          this.el.components.sound.playSound();
-        }
+        if (this.el.components.sound) this.el.components.sound.playSound();
       }
     });
 
-    AFRAME.registerComponent('spatial-conveyor', {
-      schema: {
-        speed: {type: 'number', default: 1.5},
-        width: {type: 'number', default: 2},
-        depth: {type: 'number', default: 8},
-        height: {type: 'number', default: 0.5}
-      },
-      init: function () {
-        this.spawnedItems = [];
-        this.localPos = new THREE.Vector3();
-      },
-      tick: function () {
-        this.spawnedItems = document.querySelectorAll('.spawned-item');
-        const direction = new THREE.Vector3(0, 0, 1);
-        this.el.object3D.getWorldDirection(direction);
-
-        this.spawnedItems.forEach((el) => {
-          if (!el.body) return;
-          this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
-
-          const isInside = 
-            Math.abs(this.localPos.x) < this.data.width / 2 &&
-            Math.abs(this.localPos.z) < this.data.depth / 2 &&
-            this.localPos.y > -0.1 && this.localPos.y < this.data.height;
-
-          if (isInside) {
-            el.body.wakeUp();
-            el.body.fixedRotation = true;
-            el.body.updateMassProperties();
-            el.body.velocity.set(direction.x * this.data.speed, el.body.velocity.y, direction.z * this.data.speed);
-          } else {
-            if (el.body.fixedRotation) {
-              el.body.fixedRotation = false;
-              el.body.updateMassProperties();
-              el.body.velocity.set(0, el.body.velocity.y, 0);
-            }
-          }
-        });
-      }
-    });
-
+    // spawner -- creates ducks with current global settings
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
         this.spawnTimer = setInterval(() => { this.createEntity(); }, window.factorySettings.spawnRate);
       },
       createEntity: function () {
-        // Create Parent Proxy
         let el = document.createElement('a-entity');
         el.setAttribute('mixin', 'duck-proxy');
         
@@ -99,9 +135,10 @@
         const s = window.factorySettings.size;
         el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
         el.setAttribute('scale', {x: s, y: s, z: s});
+        
+        // Grab the sound from the selector's current state
         el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 10`);
 
-        // Create Child Model
         let model = document.createElement('a-entity');
         model.setAttribute('mixin', 'duck-model');
         model.setAttribute('gltf-model', '#duck-regular');
@@ -112,33 +149,29 @@
       }
     });
 
-    AFRAME.registerComponent('pressable-button', {
-      schema: { action: {type: 'string'}, value: {type: 'string'} },
-      init: function () {
-        this.isHovered = false;
-        this.el.addEventListener('hover-start', () => {
-          if (!this.isHovered) {
-            this.isHovered = true;
-            this.executeAction();
-            if(this.el.components.sound__down) this.el.components.sound__down.playSound();
+    // spatial-conveyor
+    AFRAME.registerComponent('spatial-conveyor', {
+      schema: { speed: {type: 'number', default: 1.5}, width: {type: 'number', default: 2}, depth: {type: 'number', default: 8}, height: {type: 'number', default: 0.5} },
+      init: function () { this.spawnedItems = []; this.localPos = new THREE.Vector3(); },
+      tick: function () {
+        this.spawnedItems = document.querySelectorAll('.spawned-item');
+        const direction = new THREE.Vector3(0, 0, 1);
+        this.el.object3D.getWorldDirection(direction);
+        this.spawnedItems.forEach((el) => {
+          if (!el.body) return;
+          this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
+          const isInside = Math.abs(this.localPos.x) < this.data.width / 2 && Math.abs(this.localPos.z) < this.data.depth / 2 && this.localPos.y > -0.1 && this.localPos.y < this.data.height;
+          if (isInside) {
+            el.body.wakeUp(); el.body.fixedRotation = true; el.body.updateMassProperties();
+            el.body.velocity.set(direction.x * this.data.speed, el.body.velocity.y, direction.z * this.data.speed);
+          } else if (el.body.fixedRotation) {
+            el.body.fixedRotation = false; el.body.updateMassProperties(); el.body.velocity.set(0, el.body.velocity.y, 0);
           }
         });
-        this.el.addEventListener('hover-end', () => {
-          this.isHovered = false;
-          this.el.setAttribute('position', {x: 0, y: 0, z: 0});
-          if(this.el.components.sound__up) this.el.components.sound__up.playSound();
-        });
-      },
-      executeAction: function() {
-        if (this.data.action === 'color') window.factorySettings.color = this.data.value;
-        else if (this.data.action === 'size') {
-          window.factorySettings.size += parseFloat(this.data.value);
-          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
-        }
-        this.el.setAttribute('position', {x: 0, y: 0, z: -0.025});
       }
     });
 
+    // physics-destruction
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
         this.el.addEventListener('collide', (e) => {
@@ -165,21 +198,18 @@
       <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-tophat" src="sources/models/tophat_rubber_duck.glb"></a-asset-item>
 
-      <a-mixin id="button-base" geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1" hoverable sound__down="src: #soundDown; autoplay: false; poolSize: 5" sound__up="src: #soundUp; autoplay: false; poolSize: 5"></a-mixin>
+      <a-mixin id="button-base" geometry="primitive: box; width: 0.2; height: 0.2; depth: 0.1" hoverable sound__down="src: #soundDown; autoplay: false; poolSize: 5" sound__up="src: #soundUp; autoplay: false; poolSize: 5"></a-mixin>
       <a-mixin id="button-size" geometry="primitive: box; width: 0.3; height: 0.2; depth: 0.1" material="color: #999" hoverable sound__down="src: #soundDown; autoplay: false; poolSize: 5" sound__up="src: #soundUp; autoplay: false; poolSize: 5"></a-mixin>
 
       <a-mixin id="duck-proxy"
         geometry="primitive: box; width: 1; height: 1; depth: 1"
-        material="color: white; opacity: 0"
+        material="color: white; opacity: 0; transparent: true"
         dynamic-body="mass: 1; allowSleep: false"
         grabbable hoverable
         duck-logic>
       </a-mixin>
 
-      <a-mixin id="duck-model"
-        scale="1 1 1"
-        position="0 -0.5 0">
-      </a-mixin>
+      <a-mixin id="duck-model" scale="1 1 1" position="0 -0.5 0"></a-mixin>
     </a-assets>
 
     <a-entity id="player" movement-controls="speed: 0.15">
@@ -190,20 +220,35 @@
     
     <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50"></a-plane>
 
-    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
     <a-entity id="conveyor-belt" position="0.44 0 -7.5">
-      <a-box id="belt-visual" width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
-        <a-entity id="conveyor-force" position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5"></a-entity>
+      <a-box width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
+        <a-entity position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5"></a-entity>
       </a-box>
     </a-entity>
 
     <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
-      <a-entity position="-0.4 0.1 0.05"><a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box></a-entity>
-      <a-entity position="0 0.1 0.05"><a-box mixin="button-base" material="color: green" class="button" pressable-button="action: color; value: green"></a-box></a-entity>
-      <a-entity position="0.4 0.1 0.05"><a-box mixin="button-base" material="color: blue" class="button" pressable-button="action: color; value: blue"></a-box></a-entity>
+
+      <a-entity id="sound-selector" position="0 0.1 0.05" selector-manager="type: sound; screenId: #sound-screen">
+        <a-entity position="-0.5 0 0">
+          <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: -1"></a-box>
+          <a-text value="<" align="center" position="0 0 0.06" width="2"></a-text>
+        </a-entity>
+
+        <a-box id="display-screen" position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
+        <a-text id="sound-screen" value="LOADING..." align="center" position="0 0 0.03" width="1.8" color="cyan"></a-text>
+
+        <a-entity position="0.5 0 0">
+          <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: 1"></a-box>
+          <a-text value=">" align="center" position="0 0 0.06" width="2"></a-text>
+        </a-entity>
+        
+        <a-text value="SELECT SOUND" align="center" position="0 0.15 0" width="1.5"></a-text>
+      </a-entity>
+
       <a-entity position="-0.2 -0.3 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box><a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
       <a-entity position="0.2 -0.3 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
     </a-entity>
