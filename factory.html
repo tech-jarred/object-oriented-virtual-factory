@@ -141,22 +141,57 @@
 
     AFRAME.registerComponent('spawner', {
       init: function () { 
+        this.fadeDuration = 1000; 
         this.startSpawning(); 
       },
       startSpawning: function () {
-        this.stopSpawning(); // Clear existing interval
-        this.spawnTimer = setInterval(() => { 
-          this.createEntity(); 
-        }, window.factorySettings.spawnRate);
-        
-        // Future Sound Hook
-        if (this.el.components.sound) this.el.components.sound.playSound();
-      },
+          this.stopSpawning(); // Clear existing intervals
+          
+          // Begin spawning ducks
+          this.spawnTimer = setInterval(() => { 
+            this.createEntity(); 
+          }, window.factorySettings.spawnRate);
+
+          // FADE IN MACHINE SOUND
+          const sound = this.el.components.sound;
+          if (sound) {
+            sound.playSound();
+            this.fadeVolume(0, 1, this.fadeDuration);
+          }
+        },
+
       stopSpawning: function () {
         if (this.spawnTimer) clearInterval(this.spawnTimer);
         
-        // Future Sound Hook
-        if (this.el.components.sound) this.el.components.sound.pauseSound();
+        // FADE OUT MACHINE SOUND
+        const sound = this.el.components.sound;
+        if (sound) {
+          this.fadeVolume(1, 0, this.fadeDuration, () => {
+            sound.pauseSound(); // Pause once volume hit 0
+          });
+        }
+      },
+
+      fadeVolume: function (start, end, duration, callback) {
+        const sound = this.el.components.sound;
+        const startTime = performance.now();
+
+        const animate = (currentTime) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Calculate current volume
+          const currentVol = start + (end - start) * progress;
+          this.el.setAttribute('sound', 'volume', currentVol);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else if (callback) {
+            callback();
+          }
+        };
+
+        requestAnimationFrame(animate);
       },
       createEntity: function () {
         let el = document.createElement('a-entity');
