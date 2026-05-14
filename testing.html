@@ -176,34 +176,34 @@
 
     <!-- Create button panel -->
     <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
-      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-box id="panel-backwall" width="1.5" height="1" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
 
-      <a-entity position="-0.4 0.1 0.05">
+      <a-entity id="color-button-1" position="-0.4 0.1 0.05">
         <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
       </a-entity>
 
-      <a-entity position="0 0.1 0.05">
+      <a-entity id="color-button-2" position="0 0.1 0.05">
         <a-box mixin="button-base" material="color: green" class="button" pressable-button="action: color; value: green"></a-box>
       </a-entity>
       
-      <a-entity position="0.4 0.1 0.05">
+      <a-entity id="color-button-3" position="0.4 0.1 0.05">
         <a-box mixin="button-base" material="color: blue" class="button" pressable-button="action: color; value: blue"></a-box>
       </a-entity>
       
-      <a-entity position="-0.2 -0.3 0.05">
+      <a-entity id="increase_size_button" position="-0.2 -0.3 0.05">
         <a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box>
         <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
 
-      <a-entity position="0.2 -0.3 0.05">
+      <a-entity id="decrease_size_button" position="0.2 -0.3 0.05">
         <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
     </a-entity>
 
     <!-- Create destruction zone -->
-    <a-box 
+    <a-box id="destruction-zone"
       physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
       position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3">
     </a-box>
