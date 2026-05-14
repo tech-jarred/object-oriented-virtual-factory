@@ -85,7 +85,7 @@
 </head>
 
 <body>
-  <a-scene physics="debug: true">
+  <a-scene physics="debug: false">
     <a-assets>
       <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
@@ -114,7 +114,7 @@
 
       <a-mixin id="duck-proxy"
         geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
-        material="color: yellow; opacity: 0.2"
+        material="color: yellow; opacity: 0"
         dynamic-body="mass: 1; allowSleep: false"
         grabbable hoverable>
       </a-mixin>
