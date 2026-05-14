@@ -177,7 +177,14 @@
       <!-- Audio -->
       <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
-      
+      <audio id="beeBuzz" src="sources/sounds/bee_buzz_sound.mp3" preload="auto"></audio>
+      <audio id="darthVaderBreath" src="sources/sounds/darth_vader_breath_sound.mp3" preload="auto"></audio>
+      <audio id="imBatman" src="sources/sounds/im_batman_sound.mp3" preload="auto"></audio>
+      <audio id="quack1" src="sources/sounds/quack_1_sound.mp3" preload="auto"></audio>
+      <audio id="quack2" src="sources/sounds/quack_2_sound.mp3" preload="auto"></audio>
+      <audio id="squeak" src="sources/sounds/regular_squeak_sound.mp3" preload="auto"></audio>
+      <audio id="roboBeep" src="sources/sounds/robo_beep_sound.mp3" preload="auto"></audio>
+
       <!-- Models -->
       <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
@@ -204,10 +211,10 @@
 
       <a-mixin id="duck-proxy"
         geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
-        material="color: yellow; opacity: 0"
+        material="color: white; opacity: 0"
         dynamic-body="mass: 1; allowSleep: false"
         grabbable hoverable
-        sound="src: url(sources/sounds/quack_1_sound.mp3); autoplay: false; poolSize: 10"
+        sound="src: #duck-batman; autoplay: false; poolSize: 10"
         duck-logic>
       </a-mixin>
 
