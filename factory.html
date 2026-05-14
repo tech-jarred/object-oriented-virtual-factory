@@ -167,7 +167,7 @@
         
         el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
         el.setAttribute('scale', {x: s, y: s, z: s});
-        el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 10`);
+        el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 3`);
         
         let model = document.createElement('a-entity');
         model.setAttribute('mixin', 'duck-model');
@@ -244,9 +244,20 @@
         this.el.addEventListener('collide', (e) => { 
           const collidedEl = e.detail.body.el; 
           if (collidedEl && collidedEl.classList.contains('spawned-item')) { 
+            
+            // 1. Stop any playing audio immediately
+            if (collidedEl.components.sound) {
+              collidedEl.components.sound.stopSound();
+              // 2. Remove the component to trigger its internal cleanup
+              collidedEl.removeAttribute('sound'); 
+            }
+
+            // 3. Brief delay to let the browser breathe before deletion
             setTimeout(() => { 
-              if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl); 
-            }, 0); 
+              if (collidedEl.parentNode) {
+                collidedEl.parentNode.removeChild(collidedEl); 
+              }
+            }, 10); 
           } 
         }); 
       } 
