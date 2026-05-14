@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>A-Frame Tactile Factory - Duck Physics Proxy</title>
+  <title>A-Frame Tactile Factory - Functional Conveyor</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
     delete AFRAME.components["grabbable"];
@@ -9,33 +9,40 @@
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
   <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
-  <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
-    window.factorySettings = {
-      size: 0.3,
-      color: "red",
-      spawnRate: 2000
-    };
+    window.factorySettings = { size: 0.3, color: "red", spawnRate: 2000 };
 
-    // CONVEYOR BELT COMPONENT
+    // IMPROVED CONVEYOR COMPONENT
     AFRAME.registerComponent('conveyor-belt', {
-      schema: {
-        speed: {type: 'number', default: 1.5},
-        direction: {type: 'vec3', default: {x: 0, y: 0, z: -1}} // Moves objects forward
-      },
-      init: function () {
+      schema: { speed: {type: 'number', default: 1.5} },
+      init: function() {
+        this.itemsOnBelt = new Set();
+        // Listen for collision start
         this.el.addEventListener('collide', (e) => {
-          const collidedEl = e.detail.body.el;
-          if (collidedEl && collidedEl.classList.contains('spawned-item')) {
-            // Calculate velocity based on rotation of the belt
-            const rotation = this.el.object3D.rotation.y;
-            const vx = Math.sin(rotation) * this.data.speed * -1;
-            const vz = Math.cos(rotation) * this.data.speed * -1;
-            
-            collidedEl.body.velocity.set(vx, collidedEl.body.velocity.y, vz);
+          const el = e.detail.body.el;
+          if (el && el.classList.contains('spawned-item')) {
+            this.itemsOnBelt.add(el);
           }
+        });
+      },
+      tick: function() {
+        // Every frame, push items that are currently touching the belt
+        this.itemsOnBelt.forEach(el => {
+          if (!el.body) {
+            this.itemsOnBelt.delete(el);
+            return;
+          }
+
+          // Check if still touching (simple distance/collision check)
+          // For now, we apply velocity. Based on belt rotation y:
+          const rotation = this.el.object3D.rotation.y;
+          const vx = Math.sin(rotation) * this.data.speed * -1;
+          const vz = Math.cos(rotation) * this.data.speed * -1;
+
+          // Apply velocity while keeping the object's current downward gravity
+          el.body.velocity.set(vx, el.body.velocity.y, vz);
         });
       }
     });
@@ -61,45 +68,27 @@
     });
 
     AFRAME.registerComponent('pressable-button', {
-      schema: {
-        action: {type: 'string'},
-        value: {type: 'string'}
-      },
+      schema: { action: {type: 'string'}, value: {type: 'string'} },
       init: function () {
         this.isHovered = false;
-        this.el.addEventListener('hover-start', (e) => {
+        this.el.addEventListener('hover-start', () => {
           if (!this.isHovered) {
             this.isHovered = true;
             this.executeAction();
-            if(this.el.components.sound__down) this.el.components.sound__down.playSound();
           }
         });
         this.el.addEventListener('hover-end', () => {
           this.isHovered = false;
           this.el.setAttribute('position', {x: 0, y: 0, z: 0});
-          if(this.el.components.sound__up) this.el.components.sound__up.playSound();
         });
       },
       executeAction: function() {
-        const data = this.data;
-        if (data.action === 'color') {
-          window.factorySettings.color = data.value;
-        } else if (data.action === 'size') {
-          window.factorySettings.size += parseFloat(data.value);
+        if (this.data.action === 'color') window.factorySettings.color = this.data.value;
+        if (this.data.action === 'size') {
+          window.factorySettings.size += parseFloat(this.data.value);
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         }
         this.el.setAttribute('position', {x: 0, y: 0, z: -0.025});
-      }
-    });
-
-    AFRAME.registerComponent('physics-destruction', {
-      init: function () {
-        this.el.addEventListener('collide', (e) => {
-          const collidedEl = e.detail.body.el;
-          if (collidedEl && collidedEl.classList.contains('spawned-item')) {
-            setTimeout(() => { if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl); }, 0);
-          }
-        });
       }
     });
   </script>
@@ -108,113 +97,40 @@
 <body>
   <a-scene physics="debug: true">
     <a-assets>
-      <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
-      <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
-      
-      <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
-      <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
-      <a-asset-item id="duck-vader" src="sources/models/darth_vader_rubber_duck.glb"></a-asset-item>
-      <a-asset-item id="duck-robo" src="sources/models/robo_rubber_duck.glb"></a-asset-item>
-      <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
-      <a-asset-item id="duck-tophat" src="sources/models/tophat_rubber_duck.glb"></a-asset-item>
-
-      <a-mixin id="button-base"
-        geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1"
-        hoverable
-        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
-        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
-      </a-mixin>
-
-      <a-mixin id="button-size"
-        geometry="primitive: box; width: 0.3; height: 0.2; depth: 0.1"
-        material="color: #999"
-        hoverable
-        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
-        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
-      </a-mixin>
-
-      <a-mixin id="duck-proxy"
-        geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.4"
-        material="color: yellow; opacity: 0.2"
-        dynamic-body="mass: 1; allowSleep: false"
-        grabbable hoverable>
-      </a-mixin>
-
-      <a-mixin id="duck-model" scale="0.1 0.1 0.1"></a-mixin>
+      <a-asset-item id="duck-vader" src="sources/models/new_darth_vader_rubber_duck.glb"></a-asset-item>
+      <a-mixin id="duck-proxy" geometry="primitive: box; width: 0.35; height: 0.35; depth: 0.35" material="opacity: 0.2" dynamic-body="mass: 1" grabbable hoverable></a-mixin>
+      <a-mixin id="duck-model" scale="0.2 0.2 0.2" position="0 -0.15 0"></a-mixin>
+      <a-mixin id="button-base" geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1" hoverable></a-mixin>
     </a-assets>
 
-    <a-entity environment="preset: checkerboard; lighting: distant; intensity: 0.8" position="0 -10 0"></a-entity>
-    
-    <a-entity id="player" movement-controls="speed: 0.15">
-      <a-camera position="0 1.6 0"></a-camera>
-      <a-entity id="lHand" hand-controls="hand: left" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
-      <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
-    </a-entity>
-    
+    <a-entity environment="preset: checkerboard" position="0 -10 0"></a-entity>
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
 
-    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+    <a-sphere position="0.44 5 -5.8" radius="0.5" spawner></a-sphere>
 
-    <a-entity position="2 0 -3">
-      <a-box mixin="duck-proxy" position="-1 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-batman" position="0 -0.2 0"></a-entity>
-      </a-box>
-      <a-box mixin="duck-proxy" position="-0.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-bee" position="0 -0.2 0"></a-entity>
-      </a-box>
-      <a-box mixin="duck-proxy" position="0 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-vader" position="0 -0.2 0"></a-entity>
-      </a-box>
-      <a-box mixin="duck-proxy" position="0.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-robo" position="0 -0.2 0"></a-entity>
-      </a-box>
-      <a-box mixin="duck-proxy" position="1 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-regular" position="0 -0.2 0"></a-entity>
-      </a-box>
-      <a-box mixin="duck-proxy" position="1.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-tophat" position="0 -0.2 0"></a-entity>
+    <a-entity position="2 0.5 -2" rotation="0 -45 0">
+      <a-box 
+        id="belt-surface"
+        width="1.5" height="0.1" depth="0.8" 
+        color="#222" 
+        static-body 
+        conveyor-belt="speed: 1.5">
       </a-box>
     </a-entity>
+
+    <a-box mixin="duck-proxy" position="2 2 -1" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-vader"></a-entity>
+    </a-box>
 
     <a-entity position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
-      <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
       <a-entity position="-0.4 0.1 0.05">
         <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
       </a-entity>
-      <a-entity position="0 0.1 0.05">
-        <a-box mixin="button-base" material="color: green" class="button" pressable-button="action: color; value: green"></a-box>
-      </a-entity>
-      <a-entity position="0.4 0.1 0.05">
-        <a-box mixin="button-base" material="color: blue" class="button" pressable-button="action: color; value: blue"></a-box>
-      </a-entity>
-      <a-entity position="-0.2 -0.3 0.05">
-        <a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box>
-        <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
-      </a-entity>
-      <a-entity position="0.2 -0.3 0.05">
-        <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
-        <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
+      <a-entity position="0 -0.3 0.05">
+        <a-box mixin="button-base" class="button" pressable-button="action: size; value: 0.1"></a-box>
       </a-entity>
     </a-entity>
-
-    <a-entity position="2 0 -2" rotation="0 -45 0">
-      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
-      <a-text value="CONVEYOR BELT" align="center" position="0 0.4 0.06" width="2"></a-text>
-      
-      <a-box 
-        position="0 0 0.3" 
-        rotation="90 0 0" 
-        width="1.2" height="0.6" depth="0.05" 
-        color="#222" 
-        static-body 
-        conveyor-belt="speed: 1.2">
-        <a-animation attribute="material.offset" from="0 0" to="0 1" repeat="indefinite" dur="2000" easing="linear"></a-animation>
-      </a-box>
-    </a-entity>
-
-    <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
-           position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
 
   </a-scene>
 </body>
