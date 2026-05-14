@@ -270,6 +270,7 @@
     <a-assets>
       <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
+      <audio id="machine" src="sources/sounds/machine.mp3" preload="auto"></audio>
       
       <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
@@ -291,7 +292,7 @@
     
     <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50"></a-plane>
 
-    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true;"></a-sphere>
 
     <a-entity id="conveyor-belt" position="0.44 0 -7.5">
       <a-box width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
