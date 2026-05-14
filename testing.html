@@ -19,6 +19,27 @@
       spawnRate: 2000
     };
 
+    // CONVEYOR BELT COMPONENT
+    AFRAME.registerComponent('conveyor-belt', {
+      schema: {
+        speed: {type: 'number', default: 1.5},
+        direction: {type: 'vec3', default: {x: 0, y: 0, z: -1}} // Moves objects forward
+      },
+      init: function () {
+        this.el.addEventListener('collide', (e) => {
+          const collidedEl = e.detail.body.el;
+          if (collidedEl && collidedEl.classList.contains('spawned-item')) {
+            // Calculate velocity based on rotation of the belt
+            const rotation = this.el.object3D.rotation.y;
+            const vx = Math.sin(rotation) * this.data.speed * -1;
+            const vz = Math.cos(rotation) * this.data.speed * -1;
+            
+            collidedEl.body.velocity.set(vx, collidedEl.body.velocity.y, vz);
+          }
+        });
+      }
+    });
+
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -138,23 +159,18 @@
       <a-box mixin="duck-proxy" position="-1 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-batman" position="0 -0.2 0"></a-entity>
       </a-box>
-
       <a-box mixin="duck-proxy" position="-0.5 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-bee" position="0 -0.2 0"></a-entity>
       </a-box>
-
       <a-box mixin="duck-proxy" position="0 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-vader" position="0 -0.2 0"></a-entity>
       </a-box>
-
       <a-box mixin="duck-proxy" position="0.5 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-robo" position="0 -0.2 0"></a-entity>
       </a-box>
-
       <a-box mixin="duck-proxy" position="1 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-regular" position="0 -0.2 0"></a-entity>
       </a-box>
-
       <a-box mixin="duck-proxy" position="1.5 0.5 0" class="spawned-item">
         <a-entity mixin="duck-model" gltf-model="#duck-tophat" position="0 -0.2 0"></a-entity>
       </a-box>
@@ -163,7 +179,6 @@
     <a-entity position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
-
       <a-entity position="-0.4 0.1 0.05">
         <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
       </a-entity>
@@ -181,6 +196,21 @@
         <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
+    </a-entity>
+
+    <a-entity position="2 0 -2" rotation="0 -45 0">
+      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-text value="CONVEYOR BELT" align="center" position="0 0.4 0.06" width="2"></a-text>
+      
+      <a-box 
+        position="0 0 0.3" 
+        rotation="90 0 0" 
+        width="1.2" height="0.6" depth="0.05" 
+        color="#222" 
+        static-body 
+        conveyor-belt="speed: 1.2">
+        <a-animation attribute="material.offset" from="0 0" to="0 1" repeat="indefinite" dur="2000" easing="linear"></a-animation>
+      </a-box>
     </a-entity>
 
     <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
