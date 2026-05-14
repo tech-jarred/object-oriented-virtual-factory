@@ -267,7 +267,7 @@
 
 <body>
   <!-- Create scene -->
-  <a-scene physics="debug: false">
+  <a-scene physics="debug: false; friction: 0.1; restitution: 0.5">
     <!-- Load in needed assets -->
     <a-assets>
       <!-- Audio files -->
@@ -291,7 +291,7 @@
     </a-assets>
 
     <!-- Create the player -->
-    <a-entity id="player" movement-controls="speed: 0.15" static-body>
+    <a-entity id="player" movement-controls="speed: 0.15" kinematic-body>
       <a-camera position="0 1.6 0"></a-camera>
       <a-entity id="lHand" hand-controls="hand: left" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
       <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
