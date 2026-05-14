@@ -266,62 +266,78 @@
 </head>
 
 <body>
+  <!-- Create scene -->
   <a-scene physics="debug: false">
+    <!-- Load in needed assets -->
     <a-assets>
+      <!-- Audio files -->
       <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
       <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
       <audio id="machine" src="sources/sounds/machine.mp3" preload="auto"></audio>
       
+      <!-- Object models -->
       <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-vader" src="sources/models/darth_vader_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-robo" src="sources/models/robo_rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
       <a-asset-item id="duck-tophat" src="sources/models/tophat_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="factory-model" src="sources/models/factory.glb"></a-asset-item>
 
+      <!-- Mixins definitions -->
       <a-mixin id="button-base" geometry="primitive: box; width: 0.2; height: 0.2; depth: 0.1" hoverable sound__down="src: #soundDown; autoplay: false; poolSize: 5" sound__up="src: #soundUp; autoplay: false; poolSize: 5"></a-mixin>
       <a-mixin id="duck-proxy" geometry="primitive: box; width: 1; height: 1; depth: 1" material="color: white; opacity: 0; transparent: true" dynamic-body="mass: 1; allowSleep: false" grabbable hoverable duck-logic></a-mixin>
       <a-mixin id="duck-model" scale="1 1 1" position="0 -0.5 0"></a-mixin>
     </a-assets>
 
-    <a-entity id="player" movement-controls="speed: 0.15">
+    <!-- Create the player -->
+    <a-entity id="player" movement-controls="speed: 0.15" static-body>
       <a-camera position="0 1.6 0"></a-camera>
       <a-entity id="lHand" hand-controls="hand: left" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
       <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
     </a-entity>
     
+    <!-- Create a floor so objects won't fall through the environment -->
     <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50"></a-plane>
 
-    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true;"></a-sphere>
+    <!-- Create duck spawning sphere -->
+    <a-sphere id="duck-spawner" position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true;"></a-sphere>
 
+    <!-- Create the conveyor belt -->
     <a-entity id="conveyor-belt" position="0.44 0 -7.5">
-      <a-box width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
-        <a-entity position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5"></a-entity>
+      <a-box id="visual-belt" width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
+        <a-entity id="force-field" position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5"></a-entity>
       </a-box>
     </a-entity>
 
+    <!-- Create the button panel -->
     <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
-      <a-box width="1.5" height="1.4" depth="0.1" color="#444"></a-box>
+      <!-- Back wall -->
+      <a-box id="back-wall" width="1.5" height="1.4" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.6 0.06" width="2"></a-text>
 
-      <a-entity position="0 0.3 0.05" selector-manager="type: sound; screenId: #sound-screen">
+      <!-- Sound selection -->
+      <a-entity id="sound-selector" position="0 0.3 0.05" selector-manager="type: sound; screenId: #sound-screen">
         <a-entity position="-0.5 0 0"><a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: -1"></a-box><a-text value="<" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
         <a-box position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
         <a-text id="sound-screen" value="SOUND..." align="center" position="0 0 0.03" width="1.8" color="cyan"></a-text>
         <a-entity position="0.5 0 0"><a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: 1"></a-box><a-text value=">" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
       </a-entity>
 
-      <a-entity position="0 -0.1 0.05" selector-manager="type: model; screenId: #model-screen">
+      <!-- Model selection -->
+      <a-entity id="model-selector" position="0 -0.1 0.05" selector-manager="type: model; screenId: #model-screen">
         <a-entity position="-0.5 0 0"><a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: -1"></a-box><a-text value="<" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
         <a-box position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
         <a-text id="model-screen" value="MODEL..." align="center" position="0 0 0.03" width="1.8" color="lime"></a-text>
         <a-entity position="0.5 0 0"><a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: 1"></a-box><a-text value=">" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
       </a-entity>
 
-      <a-entity position="-0.2 -0.5 0.05"><a-box mixin="button-base" geometry="width: 0.3" class="button" pressable-button="action: size; value: 0.1"></a-box><a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
-      <a-entity position="0.2 -0.5 0.05"><a-box mixin="button-base" geometry="width: 0.3" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
+      <!-- Size buttons -->
+      <a-entity id="size-up" position="-0.2 -0.5 0.05"><a-box mixin="button-base" geometry="width: 0.3" class="button" pressable-button="action: size; value: 0.1"></a-box><a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
+      <a-entity id="size-down" position="0.2 -0.5 0.05"><a-box mixin="button-base" geometry="width: 0.3" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
 
-      <a-entity id="master-toggle" position="0.6 -0.5 0.05">
+      <!-- On/off switch -->
+      <a-entity id="on-off-switch" position="0.6 -0.5 0.05">
         <a-cylinder 
           class="button" 
           mixin="button-base" 
@@ -334,6 +350,10 @@
       </a-entity>
     </a-entity>
 
+    <!-- Factory model -->
+    <a-entity id="factory" position="0 0 0" gltf-model="#factory-model"></a-entity>
+
+    <!-- Destruction zones -->
     <a-box id="destruction-zone" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
   </a-scene>
 </body>
