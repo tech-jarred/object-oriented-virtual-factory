@@ -18,25 +18,32 @@
       size: 0.3,
       color: "red",
       spawnRate: 2000,
-      quackSound: "sources/sounds/quack_1_sound.mp3" // Added for future button updates
+      quackSound: "sources/sounds/quack_1_sound.mp3" 
     };
 
-    // duck-logic component -- Handles quacking on interaction and floor collision
+    // duck-logic component -- Handles quacking on interaction and floor collision with a boolean gate to prevent repeating sounds.
     AFRAME.registerComponent('duck-logic', {
       init: function () {
-        // Play sound when grabbed
+        // Boolean to track if the duck is "primed" to quack on the next impact
+        this.canQuack = false;
+
+        // Play sound when grabbed and enable quacking for the next drop
         this.el.addEventListener('grab-start', () => {
+          this.canQuack = true;
           this.playQuack();
         });
 
-        // Play sound when hitting the floor
+        // Play sound when hitting the floor, but only if it was recently grabbed
         this.el.addEventListener('collide', (e) => {
           const target = e.detail.body.el;
-          // Check if we hit the floor (the blue plane)
-          if (target && target.id === 'floor') {
-            // Only quack if moving with some velocity (prevents infinite quacking while sitting still)
+          
+          // Check if we hit the floor and if the quack is currently enabled
+          if (this.canQuack && target && target.id === 'floor') {
+            // Check velocity to ensure it's an actual impact, not just a touch
             if (this.el.body.velocity.length() > 0.5) {
               this.playQuack();
+              // Disable quacking so it doesn't loop while sitting on the floor
+              this.canQuack = false;
             }
           }
         });
