@@ -19,51 +19,52 @@
       spawnRate: 2000
     };
 
-    // FORCE-FIELD COMPONENT
+    // REDESIGNED FORCE-FIELD (Spatial Detection)
     AFRAME.registerComponent('force-field', {
       schema: {
         speed: {type: 'number', default: 1.5},
-        targetClass: {type: 'string', default: 'spawned-item'}
+        width: {type: 'number', default: 4},  // Length of the belt (X)
+        depth: {type: 'number', default: 1},  // Width of the belt (Z)
+        height: {type: 'number', default: 1}  // Detection height above belt
       },
       init: function () {
-        this.activeBodies = new Set();
-        
-        // Listen for objects entering the field
-        this.el.addEventListener('collide', (e) => {
-          const targetEl = e.detail.body.el;
-          if (targetEl && targetEl.classList.contains(this.data.targetClass)) {
-            this.activeBodies.add(targetEl);
-          }
-        });
-
-        // Optional: Remove objects when they leave (Requires collisionend support)
-        this.el.addEventListener('hitend', (e) => {
-           // We use a tick check for "existence" as a fallback, 
-           // but hitend helps keep the Set clean.
-        });
+        // Track items currently being pushed to handle the "Exit" state
+        this.activeItems = new Map(); 
       },
       tick: function () {
-        if (this.activeBodies.size === 0) return;
+        const items = this.el.sceneEl.querySelectorAll('.spawned-item');
+        const fieldObj = this.el.object3D;
 
-        // Calculate "Forward" based on the field's current rotation
-        // We use getWorldDirection to ensure it works even if nested
-        const direction = new THREE.Vector3(0, 0, 1); 
-        this.el.object3D.getWorldDirection(direction);
+        // 1. Calculate the 'Forward' direction based on the belt's rotation
+        // We use the Local X-axis (1,0,0) because that's the "Width" of our belt box
+        const worldForward = new THREE.Vector3(1, 0, 0);
+        worldForward.applyQuaternion(fieldObj.getWorldQuaternion(new THREE.Quaternion()));
 
-        this.activeBodies.forEach(el => {
-          // If the element was deleted or lost its physics body, remove it from the set
-          if (!el.parentNode || !el.body) {
-            this.activeBodies.delete(el);
-            return;
+        items.forEach(el => {
+          if (!el.body) return;
+
+          // 2. Convert duck's world position to the field's local space
+          const worldPos = el.object3D.getWorldPosition(new THREE.Vector3());
+          const localPos = fieldObj.worldToLocal(worldPos);
+
+          // 3. Mathematical Bounds Check (Is the duck inside the box volume?)
+          const isInside = Math.abs(localPos.x) < (this.data.width / 2) &&
+                           Math.abs(localPos.z) < (this.data.depth / 2) &&
+                           localPos.y > 0 && localPos.y < this.data.height;
+
+          if (isInside) {
+            // Apply constant velocity along the calculated world direction
+            el.body.velocity.set(
+              worldForward.x * this.data.speed,
+              el.body.velocity.y, // Maintain gravity
+              worldForward.z * this.data.speed
+            );
+            this.activeItems.set(el, true);
+          } else if (this.activeItems.has(el)) {
+            // 4. EXIT LOGIC: If it was inside last frame but isn't now, stop it
+            el.body.velocity.set(0, el.body.velocity.y, 0);
+            this.activeItems.delete(el);
           }
-
-          // Apply velocity along the calculated direction
-          // We keep the object's existing Y velocity so gravity still works
-          el.body.velocity.set(
-            direction.x * this.data.speed,
-            el.body.velocity.y,
-            direction.z * this.data.speed
-          );
         });
       }
     });
@@ -181,7 +182,7 @@
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
 
-    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
+    <a-sphere id="testing" position="2 4 -2" color="white" radius="0.2" spawner></a-sphere>
 
     <a-entity position="2 0 -3">
       <a-box mixin="duck-proxy" position="-1 0.5 0" class="spawned-item">
@@ -226,18 +227,12 @@
       </a-entity>
     </a-entity>
 
-    <a-entity position="2 0.05 -2" rotation="0 -90 0">
-      <a-box width="4" height="0.1" depth="1" color="#333" static-body="friction: 0"></a-box>
+    <a-entity position="2 0 -2" rotation="0 -45 0">
+      <a-box width="4" height="0.1" depth="1" color="#222" static-body="friction: 0"></a-box>
       
-      <a-box 
-        width="4" height="0.5" depth="1" 
-        position="0 0.3 0"
-        visible="false"
-        static-body="shape: box; emitCollisionEvents: true; sensor: true"
-        force-field="speed: 1.2">
-      </a-box>
+      <a-entity force-field="speed: 1.5; width: 4; depth: 1"></a-entity>
       
-      <a-text value="FORCE FIELD BELT" align="center" position="0 0.1 0.6" rotation="-90 0 0" width="3"></a-text>
+      <a-text value="FIXED BELT" align="center" position="0 0.2 0" rotation="-90 0 0" width="3"></a-text>
     </a-entity>
 
     <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
