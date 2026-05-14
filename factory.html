@@ -93,6 +93,7 @@
         });
         this.el.addEventListener('hover-end', () => {
           this.isHovered = false;
+          // Return to original position
           this.el.setAttribute('position', {
             x: this.el.object3D.position.x, 
             y: this.el.object3D.position.y, 
@@ -108,6 +109,7 @@
           const manager = this.el.closest('[selector-manager]');
           if (manager) manager.components['selector-manager'].cycle(parseInt(this.data.value));
         }
+        // Visual "click" depth
         this.el.setAttribute('position', {
           x: this.el.object3D.position.x, 
           y: this.el.object3D.position.y, 
@@ -119,15 +121,12 @@
     AFRAME.registerComponent('toggle-logic', {
       init: function () {
         this.el.addEventListener('hover-start', () => {
-          // Wake up AudioContext for VR browsers
-          if (this.el.sceneEl.audioListener && this.el.sceneEl.audioListener.context.state === 'suspended') {
-            this.el.sceneEl.audioListener.context.resume();
-          }
-
           const settings = window.factorySettings;
           const spawnerEl = document.querySelector('[spawner]');
           
           settings.spawnActive = !settings.spawnActive;
+          
+          // Color logic: Red = ON, Green = OFF
           this.el.setAttribute('material', 'color', settings.spawnActive ? 'red' : 'green');
           
           if (spawnerEl) {
@@ -142,59 +141,27 @@
 
     AFRAME.registerComponent('spawner', {
       init: function () { 
-        this.fadeDuration = 1000; 
-        this.activeFade = null;
         this.startSpawning(); 
       },
       startSpawning: function () {
-        this.stopSpawning(); 
+        this.stopSpawning(); // Clear existing interval
         this.spawnTimer = setInterval(() => { 
           this.createEntity(); 
         }, window.factorySettings.spawnRate);
         
-        const sound = this.el.components.sound;
-        if (sound) {
-          sound.playSound();
-          this.fadeVolume(sound.data.volume, 1, this.fadeDuration);
-        }
+        // Future Sound Hook
+        if (this.el.components.sound) this.el.components.sound.playSound();
       },
       stopSpawning: function () {
-        if (this.spawnTimer) {
-          clearInterval(this.spawnTimer);
-          this.spawnTimer = null;
-        }
+        if (this.spawnTimer) clearInterval(this.spawnTimer);
         
-        const sound = this.el.components.sound;
-        if (sound) {
-          this.fadeVolume(sound.data.volume, 0, this.fadeDuration, () => {
-            sound.pauseSound(); 
-          });
-        }
-      },
-      fadeVolume: function (start, end, duration, callback) {
-        const sound = this.el.components.sound;
-        if (!sound) return;
-        if (this.activeFade) cancelAnimationFrame(this.activeFade);
-
-        const startTime = performance.now();
-        const animate = (currentTime) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const currentVol = start + (end - start) * progress;
-          this.el.setAttribute('sound', 'volume', currentVol);
-
-          if (progress < 1) {
-            this.activeFade = requestAnimationFrame(animate);
-          } else {
-            this.activeFade = null;
-            if (callback) callback();
-          }
-        };
-        this.activeFade = requestAnimationFrame(animate);
+        // Future Sound Hook
+        if (this.el.components.sound) this.el.components.sound.pauseSound();
       },
       createEntity: function () {
         let el = document.createElement('a-entity');
         el.setAttribute('mixin', 'duck-proxy');
+        
         const spawnPos = this.el.object3D.position;
         const s = window.factorySettings.size;
         
@@ -211,7 +178,8 @@
         this.el.sceneEl.appendChild(el);
       }
     });
-
+    
+    // spatial-conveyor -- Moves ducks along the belt
     AFRAME.registerComponent('spatial-conveyor', {
       schema: { 
         speed: {type: 'number', default: 1.5}, 
@@ -231,6 +199,7 @@
         this.spawnedItems.forEach((el) => {
           if (!el.body) return;
           this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
+          
           const isInside = Math.abs(this.localPos.x) < this.data.width / 2 && 
                            Math.abs(this.localPos.z) < this.data.depth / 2 && 
                            this.localPos.y > -0.1 && 
@@ -275,12 +244,19 @@
         this.el.addEventListener('collide', (e) => { 
           const collidedEl = e.detail.body.el; 
           if (collidedEl && collidedEl.classList.contains('spawned-item')) { 
+            
+            // 1. Stop any playing audio immediately
             if (collidedEl.components.sound) {
               collidedEl.components.sound.stopSound();
+              // 2. Remove the component to trigger its internal cleanup
               collidedEl.removeAttribute('sound'); 
             }
+
+            // 3. Brief delay to let the browser breathe before deletion
             setTimeout(() => { 
-              if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl); 
+              if (collidedEl.parentNode) {
+                collidedEl.parentNode.removeChild(collidedEl); 
+              }
             }, 10); 
           } 
         }); 
@@ -316,8 +292,7 @@
     
     <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50"></a-plane>
 
-    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner 
-              sound="src: #machine; autoplay: false; loop: true; volume: 0"></a-sphere>
+    <a-sphere position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true;"></a-sphere>
 
     <a-entity id="conveyor-belt" position="0.44 0 -7.5">
       <a-box width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
@@ -347,8 +322,15 @@
       <a-entity position="0.2 -0.5 0.05"><a-box mixin="button-base" geometry="width: 0.3" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
 
       <a-entity id="master-toggle" position="0.6 -0.5 0.05">
-        <a-cylinder class="button" mixin="button-base" geometry="primitive: cylinder; radius: 0.1; height: 0.1" 
-                    rotation="90 0 0" material="color: red" toggle-logic></a-cylinder>
+        <a-cylinder 
+          class="button" 
+          mixin="button-base" 
+          geometry="primitive: cylinder; radius: 0.1; height: 0.1" 
+          rotation="90 0 0" 
+          material="color: red" 
+          pressable-button="action: toggle" 
+          toggle-logic>
+        </a-cylinder>
       </a-entity>
     </a-entity>
 
