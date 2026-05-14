@@ -17,15 +17,45 @@
     window.factorySettings = {
       size: 0.3,
       color: "red",
-      spawnRate: 2000
+      spawnRate: 2000,
+      quackSound: "sources/sounds/quack_1_sound.mp3" // Added for future button updates
     };
+
+    // duck-logic component -- Handles quacking on interaction and floor collision
+    AFRAME.registerComponent('duck-logic', {
+      init: function () {
+        // Play sound when grabbed
+        this.el.addEventListener('grab-start', () => {
+          this.playQuack();
+        });
+
+        // Play sound when hitting the floor
+        this.el.addEventListener('collide', (e) => {
+          const target = e.detail.body.el;
+          // Check if we hit the floor (the blue plane)
+          if (target && target.id === 'floor') {
+            // Only quack if moving with some velocity (prevents infinite quacking while sitting still)
+            if (this.el.body.velocity.length() > 0.5) {
+              this.playQuack();
+            }
+          }
+        });
+      },
+      playQuack: function() {
+        // Trigger the sound component. Using the built-in 'sound' component 
+        // makes it easy to swap the 'src' later via your buttons.
+        if (this.el.components.sound) {
+          this.el.components.sound.playSound();
+        }
+      }
+    });
 
     // spatial-conveyor component -- This uses the Spatial Trigger Volume approach.
     AFRAME.registerComponent('spatial-conveyor', {
       schema: {
         speed: {type: 'number', default: 1.5},
         width: {type: 'number', default: 2},
-        depth: {type: 'number', default: 8}, // Set higher than visual depth for overhang
+        depth: {type: 'number', default: 8},
         height: {type: 'number', default: 0.5}
       },
       init: function () {
@@ -34,20 +64,13 @@
       },
       tick: function () {
         this.spawnedItems = document.querySelectorAll('.spawned-item');
-        
-        // Get direction from the detection zone's own orientation
         const direction = new THREE.Vector3(0, 0, 1);
         this.el.object3D.getWorldDirection(direction);
 
         this.spawnedItems.forEach((el) => {
           if (!el.body) return;
-
-          // Convert duck's world position to this specific detection zone's local space
           this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
 
-          // Check bounds: is the duck inside the defined volume?
-          // Using LaTeX for the bounding condition: 
-          // $$|x| < \frac{w}{2}, \quad |z| < \frac{d}{2}, \quad 0 < y < h$$
           const isInside = 
             Math.abs(this.localPos.x) < this.data.width / 2 &&
             Math.abs(this.localPos.z) < this.data.depth / 2 &&
@@ -57,12 +80,7 @@
             el.body.wakeUp();
             el.body.fixedRotation = true;
             el.body.updateMassProperties();
-
-            el.body.velocity.set(
-              direction.x * this.data.speed,
-              el.body.velocity.y, 
-              direction.z * this.data.speed
-            );
+            el.body.velocity.set(direction.x * this.data.speed, el.body.velocity.y, direction.z * this.data.speed);
           } else {
             if (el.body.fixedRotation) {
               el.body.fixedRotation = false;
@@ -90,6 +108,9 @@
         el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
         el.setAttribute('hoverable', '');
         el.setAttribute('grabbable', '');
+        // Attach the logic and the sound component here for spawned items
+        el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 10`);
+        el.setAttribute('duck-logic', '');
         el.classList.add('spawned-item');
         this.el.sceneEl.appendChild(el);
       }
@@ -178,7 +199,9 @@
         geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
         material="color: yellow; opacity: 0"
         dynamic-body="mass: 1; allowSleep: false"
-        grabbable hoverable>
+        grabbable hoverable
+        sound="src: url(sources/sounds/quack_1_sound.mp3); autoplay: false; poolSize: 10"
+        duck-logic>
       </a-mixin>
 
       <a-mixin id="duck-model"
@@ -197,24 +220,21 @@
       <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
     </a-entity>
     
-    <!-- Create a plane so objects don't fall through floor -->
-    <a-plane static-body color="#0000FF" rotation="-90 0 0" width="50" height="50" opacity="1"></a-plane>
+    <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50" opacity="1"></a-plane>
 
     <!-- Create spawning zone -->
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner opacity="1"></a-sphere>
 
-    <!-- Create conveyor belt -->
-    <a-entity id="conveyor-belt" position="0.44 3 -7.5">
-      <a-box
-        id="belt-visual" 
-        width="2" height="0.1" depth="6" 
-        color="#333" 
-        static-body="friction: 0">             
-          <a-entity
-            id="conveyor-force" 
-            position="0 0.06 0" 
-            spatial-conveyor="speed: 1.5; width: 2; depth: 6.5; height: 0.5">
-          </a-entity>
+    <a-entity id="conveyor-belt" position="0.44 0 -7.5">
+      <a-box id="belt-visual" 
+             width="2" height="0.1" depth="6" 
+             color="#333" 
+             static-body="friction: 0">
+             
+        <a-entity id="conveyor-force" 
+                  position="0 0.06 0" 
+                  spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5">
+        </a-entity>
       </a-box>
     </a-entity>
 
