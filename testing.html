@@ -20,6 +20,60 @@
       spawnRate: 2000
     };
 
+    // spatial-conveyor component -- This uses the Spatial Trigger Volume approach.
+    AFRAME.registerComponent('spatial-conveyor', {
+      schema: {
+        speed: {type: 'number', default: 1.5},
+        width: {type: 'number', default: 2},
+        depth: {type: 'number', default: 8}, // Set higher than visual depth for overhang
+        height: {type: 'number', default: 0.5}
+      },
+      init: function () {
+        this.spawnedItems = [];
+        this.localPos = new THREE.Vector3();
+      },
+      tick: function () {
+        this.spawnedItems = document.querySelectorAll('.spawned-item');
+        
+        // Get direction from the detection zone's own orientation
+        const direction = new THREE.Vector3(0, 0, 1);
+        this.el.object3D.getWorldDirection(direction);
+
+        this.spawnedItems.forEach((el) => {
+          if (!el.body) return;
+
+          // Convert duck's world position to this specific detection zone's local space
+          this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
+
+          // Check bounds: is the duck inside the defined volume?
+          // Using LaTeX for the bounding condition: 
+          // $$|x| < \frac{w}{2}, \quad |z| < \frac{d}{2}, \quad 0 < y < h$$
+          const isInside = 
+            Math.abs(this.localPos.x) < this.data.width / 2 &&
+            Math.abs(this.localPos.z) < this.data.depth / 2 &&
+            this.localPos.y > -0.1 && this.localPos.y < this.data.height;
+
+          if (isInside) {
+            el.body.wakeUp();
+            el.body.fixedRotation = true;
+            el.body.updateMassProperties();
+
+            el.body.velocity.set(
+              direction.x * this.data.speed,
+              el.body.velocity.y, 
+              direction.z * this.data.speed
+            );
+          } else {
+            if (el.body.fixedRotation) {
+              el.body.fixedRotation = false;
+              el.body.updateMassProperties();
+              el.body.velocity.set(0, el.body.velocity.y, 0);
+            }
+          }
+        });
+      }
+    });
+
     // spawner component -- any entity with this component will append new entities to the scene on an interval of the spawn rate. 
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
@@ -149,7 +203,21 @@
     <!-- Create spawning zone -->
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner opacity="1"></a-sphere>
 
-    <!-- Add ducks to the scene -->
+    <!-- Create conveyor belt -->
+    <a-entity id="conveyor-belt" position="0.44 3 -7.5">
+      <a-box
+        id="belt-visual" 
+        width="2" height="0.1" depth="6" 
+        color="#333" 
+        static-body="friction: 0">             
+          <a-entity
+            id="conveyor-force" 
+            position="0 0.06 0" 
+            spatial-conveyor="speed: 1.5; width: 2; depth: 6.5; height: 0.5">
+          </a-entity>
+      </a-box>
+    </a-entity>
+
     <a-box mixin="duck-proxy" position="1 1.5 -5" class="spawned-item">
       <a-entity mixin="duck-model" gltf-model="#duck-batman"></a-entity>
     </a-box>
