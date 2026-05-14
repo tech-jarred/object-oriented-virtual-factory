@@ -19,56 +19,6 @@
       spawnRate: 2000
     };
 
-    // REDESIGNED FORCE-FIELD (Spatial Detection)
-    AFRAME.registerComponent('force-field', {
-      schema: {
-        speed: {type: 'number', default: 1.5},
-        width: {type: 'number', default: 4},  // Length of the belt (X)
-        depth: {type: 'number', default: 1},  // Width of the belt (Z)
-        height: {type: 'number', default: 1}  // Detection height above belt
-      },
-      init: function () {
-        // Track items currently being pushed to handle the "Exit" state
-        this.activeItems = new Map(); 
-      },
-      tick: function () {
-        const items = this.el.sceneEl.querySelectorAll('.spawned-item');
-        const fieldObj = this.el.object3D;
-
-        // 1. Calculate the 'Forward' direction based on the belt's rotation
-        // We use the Local X-axis (1,0,0) because that's the "Width" of our belt box
-        const worldForward = new THREE.Vector3(1, 0, 0);
-        worldForward.applyQuaternion(fieldObj.getWorldQuaternion(new THREE.Quaternion()));
-
-        items.forEach(el => {
-          if (!el.body) return;
-
-          // 2. Convert duck's world position to the field's local space
-          const worldPos = el.object3D.getWorldPosition(new THREE.Vector3());
-          const localPos = fieldObj.worldToLocal(worldPos);
-
-          // 3. Mathematical Bounds Check (Is the duck inside the box volume?)
-          const isInside = Math.abs(localPos.x) < (this.data.width / 2) &&
-                           Math.abs(localPos.z) < (this.data.depth / 2) &&
-                           localPos.y > 0 && localPos.y < this.data.height;
-
-          if (isInside) {
-            // Apply constant velocity along the calculated world direction
-            el.body.velocity.set(
-              worldForward.x * this.data.speed,
-              el.body.velocity.y, // Maintain gravity
-              worldForward.z * this.data.speed
-            );
-            this.activeItems.set(el, true);
-          } else if (this.activeItems.has(el)) {
-            // 4. EXIT LOGIC: If it was inside last frame but isn't now, stop it
-            el.body.velocity.set(0, el.body.velocity.y, 0);
-            this.activeItems.delete(el);
-          }
-        });
-      }
-    });
-
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -163,13 +113,13 @@
       </a-mixin>
 
       <a-mixin id="duck-proxy"
-        geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.4"
+        geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
         material="color: yellow; opacity: 0.2"
         dynamic-body="mass: 1; allowSleep: false"
         grabbable hoverable>
       </a-mixin>
 
-      <a-mixin id="duck-model" scale="0.1 0.1 0.1"></a-mixin>
+      <a-mixin id="duck-model" scale="0.1 0.1 0.1" position="0 -0.05 0"></a-mixin>
     </a-assets>
 
     <a-entity environment="preset: checkerboard; lighting: distant; intensity: 0.8" position="0 -10 0"></a-entity>
@@ -182,32 +132,38 @@
     
     <a-plane static-body color="#0000FF" rotation="-90 0 0" width="20" height="20"></a-plane>
 
-    <a-sphere id="testing" position="2 4 -2" color="white" radius="0.2" spawner></a-sphere>
+    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner></a-sphere>
 
     <a-entity position="2 0 -3">
       <a-box mixin="duck-proxy" position="-1 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-batman" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-batman"></a-entity>
       </a-box>
+
       <a-box mixin="duck-proxy" position="-0.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-bee" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-bee"></a-entity>
       </a-box>
+
       <a-box mixin="duck-proxy" position="0 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-vader" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-vader"></a-entity>
       </a-box>
+
       <a-box mixin="duck-proxy" position="0.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-robo" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-robo"></a-entity>
       </a-box>
+
       <a-box mixin="duck-proxy" position="1 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-regular" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-regular"></a-entity>
       </a-box>
+
       <a-box mixin="duck-proxy" position="1.5 0.5 0" class="spawned-item">
-        <a-entity mixin="duck-model" gltf-model="#duck-tophat" position="0 -0.2 0"></a-entity>
+        <a-entity mixin="duck-model" gltf-model="#duck-tophat"></a-entity>
       </a-box>
     </a-entity>
 
     <a-entity position="-2 1 -2" rotation="0 45 0">
       <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
       <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
+
       <a-entity position="-0.4 0.1 0.05">
         <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
       </a-entity>
@@ -225,14 +181,6 @@
         <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
         <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
       </a-entity>
-    </a-entity>
-
-    <a-entity position="2 0 -2" rotation="0 -45 0">
-      <a-box width="4" height="0.1" depth="1" color="#222" static-body="friction: 0"></a-box>
-      
-      <a-entity force-field="speed: 1.5; width: 4; depth: 1"></a-entity>
-      
-      <a-text value="FIXED BELT" align="center" position="0 0.2 0" rotation="-90 0 0" width="3"></a-text>
     </a-entity>
 
     <a-box physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
