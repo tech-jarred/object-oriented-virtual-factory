@@ -134,7 +134,7 @@
     </a-assets>
 
     <!-- Create the environment around player -->
-    <a-entity environment="preset: checkerboard;" position="0 0 0"></a-entity>
+    <!-- <a-entity id="environment" environment="preset: starry;" position="0 0 0"></a-entity> -->
     
     <!-- Create the player -->
     <a-entity id="player" movement-controls="speed: 0.15">
@@ -144,7 +144,7 @@
     </a-entity>
     
     <!-- Create a plane so objects don't fall through floor -->
-    <a-plane static-body color="#0000FF" rotation="-90 0 0" width="100" height="100" opacity="0"></a-plane>
+    <a-plane static-body color="#0000FF" rotation="-90 0 0" width="50" height="50" opacity="1"></a-plane>
 
     <!-- Create spawning zone -->
     <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner opacity="1"></a-sphere>
