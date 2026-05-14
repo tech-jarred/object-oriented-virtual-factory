@@ -4,6 +4,7 @@
   <title>Rubber Duck Factory</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script>
+    // Prevent component collision with older versions of super-hands
     delete AFRAME.components["grabbable"];
   </script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
@@ -13,7 +14,7 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
-    // Expanded settings to include arrays for scalability
+    // GLOBAL SETTINGS: The single source of truth for the factory
     window.factorySettings = {
       size: 0.3,
       spawnRate: 2000,
@@ -29,45 +30,66 @@
         { name: "Darth Vader", file: "darth_vader_breath_sound.mp3" },
         { name: "I'm Batman", file: "im_batman_sound.mp3" }
       ],
-      get quackSound() { 
-        return "sources/sounds/" + this.sounds[this.soundIndex].file; 
-      }
+
+      // Model logic
+      modelIndex: 0,
+      models: [
+        { name: "Rubber Duck", id: "#duck-regular" },
+        { name: "Sir Duck", id: "#duck-tophat" },
+        { name: "Bee Duck", id: "#duck-bee" },
+        { name: "Robo Duck", id: "#duck-robo" },
+        { name: "Darth Duck", id: "#duck-vader" },
+        { name: "Batman", id: "#duck-batman" }
+      ],
+      
+      // Helper getters to simplify access
+      get quackSound() { return "sources/sounds/" + this.sounds[this.soundIndex].file; },
+      get currentModel() { return this.models[this.modelIndex].id; }
     };
 
-    // selector-manager -- This component handles the carousel logic
+    // selector-manager -- Abstracted to handle any type of data carousel
     AFRAME.registerComponent('selector-manager', {
       schema: {
-        type: { type: 'string', default: 'sound' }, // Can be 'sound' or eventually 'model'
+        type: { type: 'string', default: 'sound' }, // 'sound' or 'model'
         screenId: { type: 'string' }
       },
       init: function () {
         this.updateDisplay();
       },
-      // Move index forward or backward
       cycle: function(direction) {
         const settings = window.factorySettings;
-        const list = settings.sounds; // We'll point this to models later based on type
+        const type = this.data.type;
         
-        // Use modulo to wrap around the array
-        // (index + delta + length) % length
-        settings.soundIndex = (settings.soundIndex + direction + list.length) % list.length;
+        if (type === 'sound') {
+          const list = settings.sounds;
+          settings.soundIndex = (settings.soundIndex + direction + list.length) % list.length;
+        } else if (type === 'model') {
+          const list = settings.models;
+          settings.modelIndex = (settings.modelIndex + direction + list.length) % list.length;
+        }
         
         this.updateDisplay();
       },
       updateDisplay: function() {
+        const settings = window.factorySettings;
         const screen = document.querySelector(this.data.screenId);
-        if (screen) {
-          const currentName = window.factorySettings.sounds[window.factorySettings.soundIndex].name;
-          screen.setAttribute('value', currentName);
+        if (!screen) return;
+
+        let displayName = "";
+        if (this.data.type === 'sound') {
+          displayName = settings.sounds[settings.soundIndex].name;
+        } else {
+          displayName = settings.models[settings.modelIndex].name;
         }
+        screen.setAttribute('value', displayName);
       }
     });
 
-    // Modified pressable-button to support the selector
+    // Modified pressable-button to find the nearest selector-manager
     AFRAME.registerComponent('pressable-button', {
       schema: {
-        action: {type: 'string'}, // 'color', 'size', 'cycle'
-        value: {type: 'string'}  // for cycle, this will be '1' or '-1'
+        action: {type: 'string'},
+        value: {type: 'string'}
       },
       init: function () {
         this.isHovered = false;
@@ -89,16 +111,14 @@
           window.factorySettings.size += parseFloat(this.data.value);
           window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
         } else if (this.data.action === 'cycle') {
-          // Find the manager on the parent panel and tell it to cycle
           const manager = this.el.closest('[selector-manager]');
           if (manager) manager.components['selector-manager'].cycle(parseInt(this.data.value));
         }
-        // Button visual "push"
         this.el.setAttribute('position', {x: this.el.object3D.position.x, y: this.el.object3D.position.y, z: -0.025});
       }
     });
 
-    // duck-logic -- Plays current sound
+    // duck-logic -- Boolean gate prevents repetitive quacking on floor
     AFRAME.registerComponent('duck-logic', {
       init: function () {
         this.canQuack = false;
@@ -121,7 +141,7 @@
       }
     });
 
-    // spawner -- creates ducks with current global settings
+    // spawner -- Generates the nested Proxy-Model entity
     AFRAME.registerComponent('spawner', {
       init: function () { this.startSpawning(); },
       startSpawning: function () {
@@ -135,13 +155,11 @@
         const s = window.factorySettings.size;
         el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
         el.setAttribute('scale', {x: s, y: s, z: s});
-        
-        // Grab the sound from the selector's current state
         el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 10`);
 
         let model = document.createElement('a-entity');
         model.setAttribute('mixin', 'duck-model');
-        model.setAttribute('gltf-model', '#duck-regular');
+        model.setAttribute('gltf-model', window.factorySettings.currentModel); // USES CURRENT SELECTOR MODEL
         
         el.appendChild(model);
         el.classList.add('spawned-item');
@@ -149,7 +167,7 @@
       }
     });
 
-    // spatial-conveyor
+    // spatial-conveyor -- Moves ducks along the belt
     AFRAME.registerComponent('spatial-conveyor', {
       schema: { speed: {type: 'number', default: 1.5}, width: {type: 'number', default: 2}, depth: {type: 'number', default: 8}, height: {type: 'number', default: 0.5} },
       init: function () { this.spawnedItems = []; this.localPos = new THREE.Vector3(); },
@@ -171,7 +189,7 @@
       }
     });
 
-    // physics-destruction
+    // physics-destruction -- Deletes ducks at end of belt
     AFRAME.registerComponent('physics-destruction', {
       init: function () {
         this.el.addEventListener('collide', (e) => {
@@ -229,28 +247,39 @@
     </a-entity>
 
     <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
-      <a-box width="1.5" height="1" depth="0.1" color="#444"></a-box>
-      <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
+      <a-box width="1.5" height="1.4" depth="0.1" color="#444"></a-box>
+      <a-text value="FACTORY CONTROLS" align="center" position="0 0.6 0.06" width="2"></a-text>
 
-      <a-entity id="sound-selector" position="0 0.1 0.05" selector-manager="type: sound; screenId: #sound-screen">
+      <a-entity id="sound-selector" position="0 0.3 0.05" selector-manager="type: sound; screenId: #sound-screen">
         <a-entity position="-0.5 0 0">
           <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: -1"></a-box>
           <a-text value="<" align="center" position="0 0 0.06" width="2"></a-text>
         </a-entity>
-
-        <a-box id="display-screen" position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
-        <a-text id="sound-screen" value="LOADING..." align="center" position="0 0 0.03" width="1.8" color="cyan"></a-text>
-
+        <a-box position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
+        <a-text id="sound-screen" value="SOUND..." align="center" position="0 0 0.03" width="1.8" color="cyan"></a-text>
         <a-entity position="0.5 0 0">
           <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: 1"></a-box>
           <a-text value=">" align="center" position="0 0 0.06" width="2"></a-text>
         </a-entity>
-        
         <a-text value="SELECT SOUND" align="center" position="0 0.15 0" width="1.5"></a-text>
       </a-entity>
 
-      <a-entity position="-0.2 -0.3 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box><a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
-      <a-entity position="0.2 -0.3 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
+      <a-entity id="model-selector" position="0 -0.1 0.05" selector-manager="type: model; screenId: #model-screen">
+        <a-entity position="-0.5 0 0">
+          <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: -1"></a-box>
+          <a-text value="<" align="center" position="0 0 0.06" width="2"></a-text>
+        </a-entity>
+        <a-box position="0 0 0" geometry="width: 0.6; height: 0.2; depth: 0.02" material="color: black"></a-box>
+        <a-text id="model-screen" value="MODEL..." align="center" position="0 0 0.03" width="1.8" color="lime"></a-text>
+        <a-entity position="0.5 0 0">
+          <a-box mixin="button-base" material="color: #666" class="button" pressable-button="action: cycle; value: 1"></a-box>
+          <a-text value=">" align="center" position="0 0 0.06" width="2"></a-text>
+        </a-entity>
+        <a-text value="SELECT MODEL" align="center" position="0 0.15 0" width="1.5"></a-text>
+      </a-entity>
+
+      <a-entity position="-0.2 -0.5 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box><a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
+      <a-entity position="0.2 -0.5 0.05"><a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box><a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text></a-entity>
     </a-entity>
 
     <a-box id="destruction-zone" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
