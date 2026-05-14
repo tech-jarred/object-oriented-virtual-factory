@@ -297,11 +297,14 @@
       <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
     </a-entity>
     
+    <!-- Create background environment -->
+    <a-entity id="environment" environment="preset: starry;" position="0 -0.01 0"></a-entity>
+
     <!-- Create a floor so objects won't fall through the environment -->
-    <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50"></a-plane>
+    <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50" visible="false"></a-plane>
 
     <!-- Create duck spawning sphere -->
-    <a-sphere id="duck-spawner" position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true;"></a-sphere>
+    <a-sphere id="duck-spawner" position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 10"></a-sphere>
 
     <!-- Create the conveyor belt -->
     <a-entity id="conveyor-belt" position="0.44 0 -7.5">
