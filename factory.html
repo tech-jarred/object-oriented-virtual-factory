@@ -317,7 +317,7 @@
       </a-entity>
 
       <!-- Create duck spawning sphere -->
-      <a-sphere id="duck-spawner" visible="false" position="-2.86503 1.699 -3.407" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 10"></a-sphere>
+      <a-sphere id="duck-spawner" visible="false" position="-2.86503 1.699 -3.407" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 5"></a-sphere>
 
       <!-- Destruction zones -->
       <a-box id="destruction-zone1" scale="0.11 1 0.464" visible="false" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true; sphereRadius: NaN" position="1.30217 1.78 -3.412" width="1" height="2" depth="2.5" color="red" opacity="0.3"></a-box>
@@ -365,7 +365,7 @@
 
       <!-- Create plane walls for dynamic and kinematic body collision -->
       <a-plane id="left-wall-front" visible="false" scale="2.23223 2.43668 1" rotation="0 270 0" position="1.239 1.38037 1.80849" static-body="sphereRadius: NaN" static-body color="purple"></a-plane>
-      <a-plane id="right-wall-front" visible="false" static-body="sphereRadius: NaN" scale="2.294 2.453 1" rotation="0 270 0" position="1.239 1.404 -2.916" static-body color="yellow"></a-plane>
+      <a-plane id="right-wall-front" visible="false" static-body="sphereRadius: NaN" scale="2.294 2.453 1" rotation="0 90 0" position="1.36793 1.404 -2.916" static-body color="yellow"></a-plane>
       <a-plane id="left-wall" visible="false" scale="3.57121 2.80183 1" position="-0.62182 1.59341 2.99702" rotation="0 180 0" static-body color="green"></a-plane>
       <a-plane id="right-wall" visible="false" scale="3.60984 2.54573 1" static-body="sphereRadius: NaN" rotation="0 180 0" position="-0.61256 1.51443 -4.19421" static-body color="cyan"></a-plane>
       <a-plane id="factory-back-wall" visible="false" scale="4.68514 2.73867 1" static-body="sphereRadius: NaN" rotation="0 90 0" position="-2.49271 1.62318 0.56503" static-body color="black"></a-plane>
