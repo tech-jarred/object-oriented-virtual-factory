@@ -307,7 +307,7 @@
     <!-- Factory model -->
     <a-entity id="factory" position="0 0 0" gltf-model="#factory-model">
       <!-- Add ambient noise spheres -->
-      <a-sphere id="truck-engine-sound" radius="1" position="1 0 5" sound="src: #truck; autoplay: true; loop: true; refdistance: 1.5; rolloffFactor: 5; volume: 1"></a-sphere>
+      <a-sphere id="truck-engine-sound" visible="false" radius="1" position="1.84435 0.69328 4.15637" sound="src: #truck; autoplay: true; loop: true; refdistance: 1.5; rolloffFactor: 5; volume: 1"></a-sphere>
 
       <!-- Create the conveyor belt -->
       <a-entity id="conveyor-belt" position="0.44 0 -7.5">
@@ -320,11 +320,11 @@
       <a-sphere id="duck-spawner" position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 10"></a-sphere>
 
       <!-- Destruction zones -->
-      <a-box id="destruction-zone1" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
-      <a-box id="destruction-zone2" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+      <a-box id="destruction-zone1" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true; sphereRadius: NaN" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
+      <a-box id="destruction-zone2" visible="false" scale="0.58724 0.18362 0.36031" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true; sphereRadius: NaN" position="-1.14872 1.9248 4.10749" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
       
       <!-- Create the button panel -->
-      <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
+      <a-entity id="button-panel" position="-0.71792 1.24553 3.00278" rotation="0 180 0">
         <!-- Back wall -->
         <a-box id="back-wall" width="1.5" height="1.4" depth="0.1" color="#444"></a-box>
         <a-text value="FACTORY CONTROLS" align="center" position="0 0.6 0.06" width="2"></a-text>
@@ -369,7 +369,7 @@
       <a-plane id="left-wall" static-body color="green"></a-plane>
       <a-plane id="right-wall" static-body color="cyan"></a-plane>
       <a-plane id="back-wall" static-body color="black"></a-plane>
-      <a-box id="truck-collision-zone" static-body color="gray" opacity="0.5"></a-box>
+      <a-box id="truck-collision-zone" scale="5.90687 1.02732 1.55645" visible="false" position="-0.29167 0.92951 4.14927" static-body="sphereRadius: NaN" static-body color="gray" opacity="0.5"></a-box>
     </a-entity>
   </a-scene>
 </body>
