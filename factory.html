@@ -14,7 +14,7 @@
   <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
   <script>
-    // --- GLOBAL STATE ---
+    // Setting up variables used globally and for dynamically changing parts
     window.factorySettings = {
       size: 0.3,
       spawnRate: 5000,
@@ -49,8 +49,9 @@
       }
     };
 
-    // --- UI COMPONENTS ---
+    // Custom components related to the user interface
 
+    // selector-manager: an implementation for buttons who cycle through an array of options (sounds, models)
     AFRAME.registerComponent('selector-manager', {
       schema: { 
         type: { type: 'string' }, 
@@ -77,6 +78,7 @@
       }
     });
 
+    // pressable-button: a component for any button in the scene that can be pressed
     AFRAME.registerComponent('pressable-button', {
       schema: { 
         action: {type: 'string'}, 
@@ -93,7 +95,7 @@
         });
         this.el.addEventListener('hover-end', () => {
           this.isHovered = false;
-          // Return to original position
+          // Return to the original position
           this.el.setAttribute('position', {
             x: this.el.object3D.position.x, 
             y: this.el.object3D.position.y, 
@@ -104,12 +106,13 @@
       },
       executeAction: function() {
         if (this.data.action === 'size') {
+          // Prevents size button selection going larger than 1 and less than 0.1
           window.factorySettings.size = Math.max(0.1, Math.min(1, window.factorySettings.size + parseFloat(this.data.value)));
         } else if (this.data.action === 'cycle') {
           const manager = this.el.closest('[selector-manager]');
           if (manager) manager.components['selector-manager'].cycle(parseInt(this.data.value));
         }
-        // Visual "click" depth
+        // Click animation
         this.el.setAttribute('position', {
           x: this.el.object3D.position.x, 
           y: this.el.object3D.position.y, 
@@ -118,6 +121,7 @@
       }
     });
 
+    // Allows for the on/off button to switch colors, could be abstracted further so it can apply to multple buttons
     AFRAME.registerComponent('toggle-logic', {
       init: function () {
         this.el.addEventListener('hover-start', () => {
@@ -137,8 +141,9 @@
       }
     });
 
-    // --- FACTORY MECHANICS ---
+    // Components related to the factory mechanisms
 
+    // spawner: responsible for spawning ducks and setting their attributes based on the global variables. Does so on the interval defined in factorySettings
     AFRAME.registerComponent('spawner', {
       init: function () {
       },
@@ -218,6 +223,7 @@
       }
     });
 
+    // duck-logic: sets up instances where a duck can 'quack' in the scene (on a hand grab, or collision with floor AFTER hand grab)
     AFRAME.registerComponent('duck-logic', { 
       init: function () { 
         this.canQuack = false; 
@@ -238,20 +244,21 @@
       } 
     });
 
+    // physics-destruction: Uses CANNON.js collision checks to determine if a spawned entity has entered a zone where is should be removed from the scene
     AFRAME.registerComponent('physics-destruction', { 
       init: function () { 
         this.el.addEventListener('collide', (e) => { 
           const collidedEl = e.detail.body.el; 
           if (collidedEl && collidedEl.classList.contains('spawned-item')) { 
             
-            // 1. Stop any playing audio immediately
+            // Stop any current audio
             if (collidedEl.components.sound) {
               collidedEl.components.sound.stopSound();
-              // 2. Remove the component to trigger its internal cleanup
+              // Remove sound attribute to keep free room for browser to load more sounds
               collidedEl.removeAttribute('sound'); 
             }
 
-            // 3. Brief delay to let the browser breathe before deletion
+            // Wait a few frames before finally removing object
             setTimeout(() => { 
               if (collidedEl.parentNode) {
                 collidedEl.parentNode.removeChild(collidedEl); 
