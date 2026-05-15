@@ -17,7 +17,7 @@
     // --- GLOBAL STATE ---
     window.factorySettings = {
       size: 0.3,
-      spawnRate: 2000,
+      spawnRate: 5000,
       spawnActive: true,
       
       soundIndex: 0,
@@ -310,14 +310,14 @@
       <a-sphere id="truck-engine-sound" visible="false" radius="1" position="1.84435 0.69328 4.15637" sound="src: #truck; autoplay: true; loop: true; refdistance: 1.5; rolloffFactor: 5; volume: 1"></a-sphere>
 
       <!-- Create the conveyor belt -->
-      <a-entity id="conveyor-belt" position="0.44 0 -7.5">
-        <a-box id="visual-belt" width="2" height="0.1" depth="6" color="#333" static-body="friction: 0">
-          <a-entity id="force-field" position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5"></a-entity>
+      <a-entity id="conveyor-belt" scale="0.45831 1 0.70385" rotation="0 90 0" position="-0.80459 0.743 -3.37599">
+        <a-box id="visual-belt" position="0 0.2067 0" width="2" height="0.1" depth="6" color="#333" static-body="friction: 0; sphereRadius: NaN">
+          <a-entity id="force-field" visible="true" position="0 0.06 0" spatial-conveyor="speed: 1.5; width: 2; depth: 6.5; height: 0.5"></a-entity>
         </a-box>
       </a-entity>
 
       <!-- Create duck spawning sphere -->
-      <a-sphere id="duck-spawner" position="0.44 5 -5.8" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 10"></a-sphere>
+      <a-sphere id="duck-spawner" visible="false" position="-2.86503 1.699 -3.407" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 10"></a-sphere>
 
       <!-- Destruction zones -->
       <a-box id="destruction-zone1" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true; sphereRadius: NaN" position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3"></a-box>
