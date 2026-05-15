@@ -23,3 +23,7 @@ https://skfb.ly/p7TqM
 Robo Rubber Duck Model
 "Poo Chi Rubber Duck" by Gaspar.Gaspar1, Sketchfab
 https://skfb.ly/oCtWQ
+
+Factory Model
+"Weekly Voxel Factory" by elbriga, Sketchfab
+https://skfb.ly/NpzY
