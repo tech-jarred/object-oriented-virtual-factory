@@ -18,7 +18,7 @@
     window.factorySettings = {
       size: 0.3,
       spawnRate: 5000,
-      spawnActive: true,
+      spawnActive: false,
       
       soundIndex: 0,
       sounds: [
@@ -140,8 +140,7 @@
     // --- FACTORY MECHANICS ---
 
     AFRAME.registerComponent('spawner', {
-      init: function () { 
-        this.startSpawning(); 
+      init: function () {
       },
       startSpawning: function () {
         this.stopSpawning(); // Clear existing interval
@@ -317,7 +316,7 @@
       </a-entity>
 
       <!-- Create duck spawning sphere -->
-      <a-sphere id="duck-spawner" visible="false" position="-2.86503 1.699 -3.407" color="white" radius="0.5" spawner sound="src: #machine; autoplay: true; loop: true; refdistance: 2; rolloffFactor: 5"></a-sphere>
+      <a-sphere id="duck-spawner" visible="false" position="-2.86503 1.699 -3.407" color="white" radius="0.5" spawner sound="src: #machine; autoplay: false; loop: true; refdistance: 2; rolloffFactor: 5"></a-sphere>
 
       <!-- Destruction zones -->
       <a-box id="destruction-zone1" scale="0.11 1 0.464" visible="false" physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true; sphereRadius: NaN" position="1.30217 1.78 -3.412" width="1" height="2" depth="2.5" color="red" opacity="0.3"></a-box>
@@ -356,7 +355,7 @@
             mixin="button-base" 
             geometry="primitive: cylinder; radius: 0.1; height: 0.1" 
             rotation="90 0 0" 
-            material="color: red" 
+            material="color: green" 
             pressable-button="action: toggle" 
             toggle-logic>
           </a-cylinder>
