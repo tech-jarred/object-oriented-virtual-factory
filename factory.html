@@ -364,11 +364,11 @@
       </a-entity>
 
       <!-- Create plane walls for dynamic and kinematic body collision -->
-      <a-plane id="left-wall-front" static-body color="purple"></a-plane>
-      <a-plane id="right-wall-front" static-body color="yellow"></a-plane>
-      <a-plane id="left-wall" static-body color="green"></a-plane>
-      <a-plane id="right-wall" static-body color="cyan"></a-plane>
-      <a-plane id="back-wall" static-body color="black"></a-plane>
+      <a-plane id="left-wall-front" visible="false" scale="2.23223 2.43668 1" rotation="0 270 0" position="1.239 1.38037 1.80849" static-body="sphereRadius: NaN" static-body color="purple"></a-plane>
+      <a-plane id="right-wall-front" visible="false" static-body="sphereRadius: NaN" scale="2.294 2.453 1" rotation="0 270 0" position="1.239 1.404 -2.916" static-body color="yellow"></a-plane>
+      <a-plane id="left-wall" visible="false" scale="3.57121 2.80183 1" position="-0.62182 1.59341 2.99702" rotation="0 180 0" static-body color="green"></a-plane>
+      <a-plane id="right-wall" visible="false" scale="3.60984 2.54573 1" static-body="sphereRadius: NaN" rotation="0 180 0" position="-0.61256 1.51443 -4.19421" static-body color="cyan"></a-plane>
+      <a-plane id="factory-back-wall" visible="false" scale="4.68514 2.73867 1" static-body="sphereRadius: NaN" rotation="0 90 0" position="-2.49271 1.62318 0.56503" static-body color="black"></a-plane>
       <a-box id="truck-collision-zone" scale="5.90687 1.02732 1.55645" visible="false" position="-0.29167 0.92951 4.14927" static-body="sphereRadius: NaN" static-body color="gray" opacity="0.5"></a-box>
     </a-entity>
   </a-scene>
