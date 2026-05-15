@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rubber Duck Factory</title>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script>
+    delete AFRAME.components["grabbable"];
+  </script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.x/dist/aframe-extras.min.js"></script>
+  <script src="https://unpkg.com/super-hands@^3.0.6/dist/super-hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+  <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+
+  <script>
+    // Define window settings, which will be updated by the buttons pushed by user. These determine parameters of objects spawned.
+    window.factorySettings = {
+      size: 0.3,
+      color: "red",
+      spawnRate: 2000,
+      quackSound: "sources/sounds/quack_1_sound.mp3" 
+    };
+
+    // duck-logic component -- Handles quacking on interaction and floor collision with a boolean gate to prevent repeating sounds.
+    AFRAME.registerComponent('duck-logic', {
+      init: function () {
+        // Boolean to track if the duck is "primed" to quack on the next impact
+        this.canQuack = false;
+
+        // Play sound when grabbed and enable quacking for the next drop
+        this.el.addEventListener('grab-start', () => {
+          this.canQuack = true;
+          this.playQuack();
+        });
+
+        // Play sound when hitting the floor, but only if it was recently grabbed
+        this.el.addEventListener('collide', (e) => {
+          const target = e.detail.body.el;
+          
+          // Check if we hit the floor and if the quack is currently enabled
+          if (this.canQuack && target && target.id === 'floor') {
+            // Check velocity to ensure it's an actual impact, not just a touch
+            if (this.el.body.velocity.length() > 0.5) {
+              this.playQuack();
+              // Disable quacking so it doesn't loop while sitting on the floor
+              this.canQuack = false;
+            }
+          }
+        });
+      },
+      playQuack: function() {
+        // Trigger the sound component. Using the built-in 'sound' component 
+        // makes it easy to swap the 'src' later via your buttons.
+        if (this.el.components.sound) {
+          this.el.components.sound.playSound();
+        }
+      }
+    });
+
+    // spatial-conveyor component -- This uses the Spatial Trigger Volume approach.
+    AFRAME.registerComponent('spatial-conveyor', {
+      schema: {
+        speed: {type: 'number', default: 1.5},
+        width: {type: 'number', default: 2},
+        depth: {type: 'number', default: 8},
+        height: {type: 'number', default: 0.5}
+      },
+      init: function () {
+        this.spawnedItems = [];
+        this.localPos = new THREE.Vector3();
+      },
+      tick: function () {
+        this.spawnedItems = document.querySelectorAll('.spawned-item');
+        const direction = new THREE.Vector3(0, 0, 1);
+        this.el.object3D.getWorldDirection(direction);
+
+        this.spawnedItems.forEach((el) => {
+          if (!el.body) return;
+          this.el.object3D.worldToLocal(this.localPos.copy(el.object3D.position));
+
+          const isInside = 
+            Math.abs(this.localPos.x) < this.data.width / 2 &&
+            Math.abs(this.localPos.z) < this.data.depth / 2 &&
+            this.localPos.y > -0.1 && this.localPos.y < this.data.height;
+
+          if (isInside) {
+            el.body.wakeUp();
+            el.body.fixedRotation = true;
+            el.body.updateMassProperties();
+            el.body.velocity.set(direction.x * this.data.speed, el.body.velocity.y, direction.z * this.data.speed);
+          } else {
+            if (el.body.fixedRotation) {
+              el.body.fixedRotation = false;
+              el.body.updateMassProperties();
+              el.body.velocity.set(0, el.body.velocity.y, 0);
+            }
+          }
+        });
+      }
+    });
+
+    // spawner component -- any entity with this component will append new entities to the scene on an interval of the spawn rate. 
+    AFRAME.registerComponent('spawner', {
+      init: function () { this.startSpawning(); },
+      startSpawning: function () {
+        this.spawnTimer = setInterval(() => { this.createEntity(); }, window.factorySettings.spawnRate);
+      },
+      createEntity: function () {
+        let el = document.createElement('a-box');
+        const spawnPos = this.el.object3D.position;
+        const s = window.factorySettings.size;
+        el.setAttribute('position', {x: spawnPos.x, y: spawnPos.y, z: spawnPos.z});
+        el.setAttribute('scale', {x: s, y: s, z: s});
+        el.setAttribute('color', window.factorySettings.color);
+        el.setAttribute('dynamic-body', 'mass: 1; allowSleep: false');
+        el.setAttribute('hoverable', '');
+        el.setAttribute('grabbable', '');
+        // Attach the logic and the sound component here for spawned items
+        el.setAttribute('sound', `src: url(${window.factorySettings.quackSound}); autoplay: false; poolSize: 10`);
+        el.setAttribute('duck-logic', '');
+        el.classList.add('spawned-item');
+        this.el.sceneEl.appendChild(el);
+      }
+    });
+
+    // pressable-button component -- any entity with this component will be a button, that when pressed, will update the corresponding variable in factorySettings, depending on the button.
+    AFRAME.registerComponent('pressable-button', {
+      schema: {
+        action: {type: 'string'},
+        value: {type: 'string'}
+      },
+      init: function () {
+        this.isHovered = false;
+        this.el.addEventListener('hover-start', (e) => {
+          if (!this.isHovered) {
+            this.isHovered = true;
+            this.executeAction();
+            if(this.el.components.sound__down) this.el.components.sound__down.playSound();
+          }
+        });
+        this.el.addEventListener('hover-end', () => {
+          this.isHovered = false;
+          this.el.setAttribute('position', {x: 0, y: 0, z: 0});
+          if(this.el.components.sound__up) this.el.components.sound__up.playSound();
+        });
+      },
+      executeAction: function() {
+        const data = this.data;
+        if (data.action === 'color') {
+          window.factorySettings.color = data.value;
+        } else if (data.action === 'size') {
+          window.factorySettings.size += parseFloat(data.value);
+          window.factorySettings.size = Math.max(0.1, Math.min(2, window.factorySettings.size));
+        }
+        this.el.setAttribute('position', {x: 0, y: 0, z: -0.025});
+      }
+    });
+
+    // physics-destruction component -- any entity with this componenet will become a field where spawned items are deleted upon contact. Requires entity to also be a static body with sensor.
+    AFRAME.registerComponent('physics-destruction', {
+      init: function () {
+        this.el.addEventListener('collide', (e) => {
+          const collidedEl = e.detail.body.el;
+          if (collidedEl && collidedEl.classList.contains('spawned-item')) {
+            setTimeout(() => { if (collidedEl.parentNode) collidedEl.parentNode.removeChild(collidedEl); }, 0);
+          }
+        });
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <a-scene physics="debug: false">
+    <!-- Load required assets -->
+    <a-assets>
+      <!-- Audio -->
+      <audio id="soundDown" src="sources/sounds/button_down.wav" preload="auto"></audio>
+      <audio id="soundUp" src="sources/sounds/button_up.wav" preload="auto"></audio>
+      <audio id="beeBuzz" src="sources/sounds/bee_buzz_sound.mp3" preload="auto"></audio>
+      <audio id="darthVaderBreath" src="sources/sounds/darth_vader_breath_sound.mp3" preload="auto"></audio>
+      <audio id="imBatman" src="sources/sounds/im_batman_sound.mp3" preload="auto"></audio>
+      <audio id="quack1" src="sources/sounds/quack_1_sound.mp3" preload="auto"></audio>
+      <audio id="quack2" src="sources/sounds/quack_2_sound.mp3" preload="auto"></audio>
+      <audio id="squeak" src="sources/sounds/regular_squeak_sound.mp3" preload="auto"></audio>
+      <audio id="roboBeep" src="sources/sounds/robo_beep_sound.mp3" preload="auto"></audio>
+
+      <!-- Models -->
+      <a-asset-item id="duck-batman" src="sources/models/batman_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-bee" src="sources/models/bee_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-vader" src="sources/models/darth_vader_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-robo" src="sources/models/robo_rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-regular" src="sources/models/rubber_duck.glb"></a-asset-item>
+      <a-asset-item id="duck-tophat" src="sources/models/tophat_rubber_duck.glb"></a-asset-item>
+
+      <!-- Define mixins -->
+      <a-mixin id="button-base"
+        geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.1"
+        hoverable
+        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
+        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
+      </a-mixin>
+
+      <a-mixin id="button-size"
+        geometry="primitive: box; width: 0.3; height: 0.2; depth: 0.1"
+        material="color: #999"
+        hoverable
+        sound__down="src: #soundDown; autoplay: false; poolSize: 5"
+        sound__up="src: #soundUp; autoplay: false; poolSize: 5">
+      </a-mixin>
+
+      <a-mixin id="duck-proxy"
+        geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
+        material="color: white; opacity: 0"
+        dynamic-body="mass: 1; allowSleep: false"
+        grabbable hoverable
+        sound="src: #imBatman; autoplay: false; poolSize: 10"
+        duck-logic>
+      </a-mixin>
+
+      <a-mixin id="duck-model"
+        scale="0.1 0.1 0.1"
+        position="0 -0.05 0">
+      </a-mixin>
+    </a-assets>
+
+    <!-- Create the environment around player -->
+    <!-- <a-entity id="environment" environment="preset: starry;" position="0 0 0"></a-entity> -->
+    
+    <!-- Create the player -->
+    <a-entity id="player" movement-controls="speed: 0.15">
+      <a-camera position="0 1.6 0"></a-camera>
+      <a-entity id="lHand" hand-controls="hand: left" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
+      <a-entity id="rHand" hand-controls="hand: right" sphere-collider="objects: .spawned-item, .button" super-hands="grabStartButtons: triggerdown; grabEndButtons: triggerup" static-body="shape: sphere; sphereRadius: 0.05"></a-entity>
+    </a-entity>
+    
+    <a-plane id="floor" static-body color="#0000FF" rotation="-90 0 0" width="50" height="50" opacity="1"></a-plane>
+
+    <!-- Create spawning zone -->
+    <a-sphere id="testing" position="0.44 5 -5.8" color="white" radius="0.5" spawner opacity="1"></a-sphere>
+
+    <a-entity id="conveyor-belt" position="0.44 0 -7.5">
+      <a-box id="belt-visual" 
+             width="2" height="0.1" depth="6" 
+             color="#333" 
+             static-body="friction: 0">
+             
+        <a-entity id="conveyor-force" 
+                  position="0 0.06 0" 
+                  spatial-conveyor="speed: 1.5; width: 2; depth: 8; height: 0.5">
+        </a-entity>
+      </a-box>
+    </a-entity>
+
+    <!-- Add ducks to scene -->
+    <a-box mixin="duck-proxy" position="1 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-batman"></a-entity>
+    </a-box>
+
+    <a-box mixin="duck-proxy" position="1.5 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-bee"></a-entity>
+    </a-box>
+
+    <a-box mixin="duck-proxy" position="2 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-vader"></a-entity>
+    </a-box>
+
+    <a-box mixin="duck-proxy" position="2.5 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-robo"></a-entity>
+    </a-box>
+
+    <a-box mixin="duck-proxy" position="3 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-regular"></a-entity>
+    </a-box>
+
+    <a-box mixin="duck-proxy" position="3.5 1.5 -5" class="spawned-item">
+      <a-entity mixin="duck-model" gltf-model="#duck-tophat"></a-entity>
+    </a-box>
+
+    <!-- Create button panel -->
+    <a-entity id="button-panel" position="-2 1 -2" rotation="0 45 0">
+      <a-box id="panel-backwall" width="1.5" height="1" depth="0.1" color="#444"></a-box>
+      <a-text value="FACTORY CONTROLS" align="center" position="0 0.4 0.06" width="2"></a-text>
+
+      <a-entity id="color-button-1" position="-0.4 0.1 0.05">
+        <a-box mixin="button-base" material="color: red" class="button" pressable-button="action: color; value: red"></a-box>
+      </a-entity>
+
+      <a-entity id="color-button-2" position="0 0.1 0.05">
+        <a-box mixin="button-base" material="color: green" class="button" pressable-button="action: color; value: green"></a-box>
+      </a-entity>
+      
+      <a-entity id="color-button-3" position="0.4 0.1 0.05">
+        <a-box mixin="button-base" material="color: blue" class="button" pressable-button="action: color; value: blue"></a-box>
+      </a-entity>
+      
+      <a-entity id="increase_size_button" position="-0.2 -0.3 0.05">
+        <a-box mixin="button-size" class="button" pressable-button="action: size; value: 0.1"></a-box>
+        <a-text value="+ SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
+      </a-entity>
+
+      <a-entity id="decrease_size_button" position="0.2 -0.3 0.05">
+        <a-box mixin="button-size" class="button" pressable-button="action: size; value: -0.1"></a-box>
+        <a-text value="- SIZE" align="center" position="0 0 0.06" width="1.5"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- Create destruction zone -->
+    <a-box id="destruction-zone"
+      physics-destruction static-body="shape: box; emitCollisionEvents: true; sensor: true" 
+      position="0.44 0.5 -10" width="6" height="2" depth="4" color="red" opacity="0.3">
+    </a-box>
+
+  </a-scene>
+</body>
+</html>
